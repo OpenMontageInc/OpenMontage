@@ -1,0 +1,34 @@
+stages:
+  - verify
+
+variables:
+  GIT_DEPTH: "20"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+.python: &python
+  image: python:3.11-slim
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends ffmpeg make
+    - python -m pip install --no-cache-dir -r requirements-dev.txt bandit pip-audit
+
+# Smoke lint e suite di test: stessi comandi del workflow GitHub, nessun job opzionale.
+validate:
+  stage: verify
+  <<: *python
+  script:
+    - make lint
+    - make test
+
+# SAST sul codice distribuito (test, .venv e node_modules non sono artefatti di produzione).
+sast:
+  stage: verify
+  <<: *python
+  script:
+    - python -m bandit -r lib backlot tools scripts
+
+# SCA sui manifest requirements, senza eccezioni o soglie abbassate.
+sca:
+  stage: verify
+  <<: *python
+  script:
+    - python -m pip_audit -r requirements.txt -r requirements-dev.txt
