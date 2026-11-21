@@ -1,0 +1,31 @@
+{
+  "name": "openmontage",
+  "version": "0.1.0",
+  "description": "World's first open-source, agentic video production system. 12 production pipelines, 100+ tools, and agent skills that turn an AI coding assistant into a full video production studio.",
+  "author": {
+    "name": "OpenMontage Inc",
+    "url": "https://github.com/OpenMontageInc"
+  },
+  "homepage": "https://www.openmontage.video/",
+  "repository": "https://github.com/OpenMontageInc/OpenMontage",
+  "license": "AGPL-3.0",
+  "keywords": [
+    "openmontage",
+    "video",
+    "agent-skills",
+    "pipelines",
+    "production",
+    "ffmpeg"
+  ],
+  "skills": "./.agents/skills/",
+  "interface": {
+    "displayName": "OpenMontage",
+    "shortDescription": "Agentic video production skills and pipelines for AI coding assistants",
+    "category": "Creativity",
+    "developerName": "OpenMontage Inc",
+    "websiteUrl": "https://www.openmontage.video/",
+    "privacyPolicyUrl": "https://www.openmontage.video/privacy",
+    "termsOfServiceUrl": "https://www.openmontage.video/terms",
+    "logo": "./assets/logo.png"
+  }
+}

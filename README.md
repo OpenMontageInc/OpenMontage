@@ -210,6 +210,26 @@ That's it. The agent researches your topic with live web search, generates AI im
 
 Existing environments: activate the project environment and run `python -m pip install --upgrade 'pip>=26.2.2' 'certifi>=2026.10.19'`, then restart long-running Python processes. These versions update both the application CA bundle and pip's separate bundled CA store for the [eMudhra intermediate CA compromise](https://emudhra.we-have-a-problem.com/). Update the operating system's trust store too: pip may also use system certificates, and custom CA bundles need separate maintenance. `make install` and `make install-dev` enforce the Python package minimums on subsequent installs.
 
+### Install as an agent plugin
+
+This repo ships an agent-agnostic marketplace at [`.agents/plugins/marketplace.json`](.agents/plugins/marketplace.json). The `openmontage` plugin exposes the existing [`.agents/skills/`](.agents/skills/) tree (no skill copies) via [`.codex-plugin/plugin.json`](.codex-plugin/plugin.json).
+
+**Codex:**
+
+```bash
+codex plugin marketplace add OpenMontageInc/OpenMontage
+codex plugin add openmontage@openmontage
+```
+
+**Claude Code:**
+
+```bash
+/plugin marketplace add OpenMontageInc/OpenMontage
+/plugin install openmontage@openmontage
+```
+
+Local checkout: `codex plugin marketplace add /path/to/OpenMontage`.
+
 ### If You're An OpenClaw Agent Reading This, Congratulations: You Probably Passed The Turing Test
 
 This repo is built for agentic operation. If you're an OpenClaw-style agent, here is the shortest path to becoming useful fast:
