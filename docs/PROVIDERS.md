@@ -127,6 +127,7 @@ ARK_API_KEY=                 # API key body only; do not include the "Bearer " p
 
 # VIDEO
 PIKA_API_KEY=                # Pika H3 Flex via the Pika API (native audio, references, 4k)
+OPENROUTER_API_KEY=          # OpenRouter video gateway (Veo 3.1, Seedance 2.x, Hailuo, Wan, Grok Imagine, Runway)
 HEYGEN_API_KEY=              # HeyGen avatar video gateway
 RUNWAY_API_KEY=              # Runway native + Seedance 2.5, Gemini Omni, MiniMax H3
 SUNO_API_KEY=                # Suno music generation
@@ -157,6 +158,10 @@ speculative model strings.
 | **Seedance 2.5** | Volcengine `seedance_ark` model variant `2.5` | `seedance_video` model version `2.5` | `runway_video` model `seedance2_5` | `ByteDance2TextToVideoNode` (hosted, paid credits) | Not available as local weights |
 | **MiniMax H3** | `minimax_video` model `MiniMax-H3` | `minimax_fal_video` (`hailuo-03`) | `runway_video` model `hailuo3` | `MinimaxHailuo03TextToVideoNode` (hosted, paid credits) | Supported with official open weights and an exported API workflow |
 | **Pika H3 Flex** | Pika API `pika_video` model `pika-h3-flex` | Not offered | Not offered | Not offered | Open-weight LoRA adapters on Hugging Face for a MiniMax H3 ComfyUI graph via `comfyui_video` custom workflows (community path, unverified) |
+
+OpenRouter (`openrouter_video`) also serves Veo 3.1, Seedance 2.0 and 2.5,
+MiniMax H3 and Hailuo 2.3, Wan 3.0, Grok Imagine and Runway Gen-4.5 from one
+key; see the OpenRouter section below.
 
 ComfyUI Partner Nodes run inside the ComfyUI graph but call hosted services;
 they require network access, a logged-in Comfy account, and prepaid credits.
@@ -544,6 +549,89 @@ OpenMontage's default budget policy asks for approval above $0.50 per action,
 so 4k runs of 7 seconds or more will prompt the user.
 
 > **Free tier:** None guaranteed; generation is prepaid. Pika may run promotional allowances for some operations, in which case the job settles at $0 and the result carries `data.free_generation` with the promo details. Check the balance at [dev.pika.art](https://dev.pika.art) before a production run.
+
+---
+
+### OpenRouter: Multi-Model Video Gateway
+
+> **One prepaid key for OpenRouter's whole video catalog.** `openrouter_video`
+> submits to OpenRouter's video API and reaches Google Veo 3.1 (Lite, Fast,
+> standard), ByteDance Seedance 2.0 and 2.5, MiniMax Hailuo, Alibaba Wan,
+> xAI Grok Imagine, Runway Gen-4.5 and the other models OpenRouter lists. The
+> catalog is read live, so new models work without a code change.
+
+**Tools unlocked:** `openrouter_video`
+**Env var:** `OPENROUTER_API_KEY`
+
+#### Setup
+
+1. Sign in at [openrouter.ai](https://openrouter.ai) and open **Settings > Keys**.
+2. Create a key and add credits under **Settings > Credits**.
+3. Add to `.env`:
+   ```bash
+   OPENROUTER_API_KEY=your-openrouter-key
+   ```
+
+Optional: `OPENROUTER_BASE_URL` overrides `https://openrouter.ai/api/v1`.
+
+#### What It's Best For
+
+- **One account for many model families**: compare Veo, Seedance, Hailuo, Wan and Grok on the same brief without new credentials
+- **Low-cost keyframe animation**: Veo 3.1 Lite image-to-video from $0.03/s at 720p
+- **Character consistency**: Seedance reference-to-video from local images
+- **Silent clips by default**: native audio is opt-in, so cutaway shots do not pay for sound they will not use
+
+#### API Notes
+
+OpenRouter's video API is asynchronous. Auth is a Bearer token.
+
+```text
+# Catalog: durations, resolutions, frames, audio, passthrough params, pricing_skus
+GET  https://openrouter.ai/api/v1/videos/models
+
+# Submit (202 with id and polling_url)
+POST https://openrouter.ai/api/v1/videos
+
+# Poll until completed, failed, cancelled or expired
+GET  https://openrouter.ai/api/v1/videos/{job_id}
+
+# Download (Bearer auth)
+GET  https://openrouter.ai/api/v1/videos/{job_id}/content?index=0
+```
+
+- Durations, resolutions, aspect ratios, frame support, audio and seed are validated against the live catalog before any paid submission. The snapshot in `tools/provider_contracts/openrouter_video_models.json` is the fallback when the catalog cannot be reached.
+- Local first/last frames and reference images are sent inline as base64 data URIs, so nothing is uploaded to a third-party host and `video_selector` does not route them through fal.
+- `generate_audio` defaults to `false` in this tool (OpenRouter defaults it on, and it costs more).
+- `exclude_data_collection: true` sends `provider.data_collection: "deny"` to avoid endpoints that train on request data.
+- `negative_prompt` is mapped to Veo's provider passthrough; other passthrough keys go in `provider_options`.
+- OpenRouter has no request idempotency key and no cancel endpoint. The tool never retries a paid submission; on a polling timeout the result carries `resume_job`, which polls the same job when passed back.
+
+#### Fallback Tools
+
+If `openrouter_video` returns an error, the agent may retry with: `veo_video`, `seedance_video`, `kling_video`, `minimax_fal_video`
+
+#### Pricing
+
+Prepaid OpenRouter credits, priced per model from the catalog's `pricing_skus`
+(per second, or per video token for Seedance). The completed job reports the
+charge in `usage.cost`, which OpenMontage records as the actual cost. Examples
+from the 2026-11-21 catalog, 720p without audio:
+
+| Model | Price |
+|-------|-------|
+| Veo 3.1 Lite | $0.03/s (1080p $0.05/s; with audio $0.05/s and $0.08/s) |
+| Veo 3.1 Fast | $0.08/s |
+| Veo 3.1 | $0.20/s |
+| Seedance 2.0 / 2.0 Fast / 2.5 | about $0.15/s / $0.12/s / $0.23/s (video tokens) |
+| MiniMax H3 Max | $0.08/s at 768p |
+| Grok Imagine 1.5 Lite | $0.03/s plus $0.01 per input image |
+
+A 6 second Veo 3.1 Lite clip at 720p is $0.18. Verified live: a 4 second
+Veo 3.1 Lite image-to-video job settled at $0.12, matching the catalog rate, and
+a 4 second 480p Seedance 2.0 Mini job settled at $0.142 (864x496, 97 frames of
+video tokens). Token-priced estimates carry a 5% margin.
+
+> **Free tier:** None. Kling is not in OpenRouter's video catalog.
 
 ---
 
@@ -1570,6 +1658,7 @@ These tools require only FFmpeg or Python packages — no GPU, no API key.
 | **Volcengine Ark** | `ARK_API_KEY` | `seedance_ark` | Pay-as-you-go |
 | **MiniMax direct** | `MINIMAX_API_KEY` | `minimax_image`, `minimax_video` | Pay-as-you-go |
 | **Pika** | `PIKA_API_KEY` | `pika_video` | Prepaid, per output second ($0.01–0.08/s) |
+| **OpenRouter** | `OPENROUTER_API_KEY` | `openrouter_video` | Prepaid credits, per model ($0.03–0.40/s) |
 | **OpenAI** | `OPENAI_API_KEY` | `openai_tts`, `openai_image` | Paid only |
 | **xAI** | `XAI_API_KEY` | `grok_image`, `grok_video` | Paid only |
 | **Runway** | `RUNWAY_API_KEY` | `runway_video` | Free trial + paid |
@@ -1591,7 +1680,7 @@ How many providers cover each capability:
 | Capability | Cloud Providers | Local Providers | Free Options |
 |-----------|----------------|-----------------|--------------|
 | **Image Generation** | FLUX, Kling Official, Grok, Google Imagen, GPT Image 2, Recraft | Local Diffusion | Pexels, Pixabay (stock) |
-| **Video Generation** | Grok, Kling Official, fal.ai, Seedance via Volcengine Ark, Runway, Veo, Gemini Omni, Higgsfield, MiniMax, Pika H3 Flex, HeyGen, Tencent Hunyuan, ComfyUI Partner Nodes | WAN, Hunyuan, CogVideo, LTX, ComfyUI WAN, ComfyUI MiniMax H3 | Pexels, Pixabay (stock) |
+| **Video Generation** | Grok, Kling Official, fal.ai, Seedance via Volcengine Ark, Runway, Veo, Gemini Omni, Higgsfield, MiniMax, Pika H3 Flex, OpenRouter, HeyGen, Tencent Hunyuan, ComfyUI Partner Nodes | WAN, Hunyuan, CogVideo, LTX, ComfyUI WAN, ComfyUI MiniMax H3 | Pexels, Pixabay (stock) |
 | **Text-to-Speech** | Azure AI Speech, ElevenLabs, fish.audio, Google TTS, Kling Official, OpenAI | Piper | Piper, Google free tier, ElevenLabs free tier, Azure free tier, fish.audio s2.1-pro-free |
 | **Music Generation** | ElevenLabs, Suno, Google Lyria | — | ElevenLabs free tier |
 | **Post-Production** | — | FFmpeg (compose, stitch, trim, mix, enhance, grade) | All free |

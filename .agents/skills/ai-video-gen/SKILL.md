@@ -25,6 +25,7 @@ Generate AI videos from text prompts. Supports multiple providers via four API p
 | **Kling Official** | `KLING_API_KEY` | Kling official Classic, Turbo, and basic Omni video | `kling_official_video` |
 | **Gemini API** | `GEMINI_API_KEY` / `GOOGLE_API_KEY` | Gemini Omni Flash (generation + conversational editing) | `gemini_omni_video` |
 | **Pika API** | `PIKA_API_KEY` | Pika H3 Flex (native audio, first/last frame, up to 12 references, 4k upscale) | `pika_video` |
+| **OpenRouter** | `OPENROUTER_API_KEY` | Veo 3.1 (Lite, Fast, standard), Seedance 2.0 / 2.5, MiniMax Hailuo, Wan 3.0, Grok Imagine, Runway Gen-4.5 (live catalog) | `openrouter_video` |
 
 **Iterative editing — Gemini Omni.** When the brief calls for *refining an existing clip* (add/remove objects, restyle, change lighting or on-screen text) rather than regenerating, Gemini Omni Flash is the only provider in the fleet with stateful multi-turn editing. See Layer 3 `gemini-omni` for the authoritative prompting guide (reference-image tags, timecode syntax, edit-prompt rules) before writing any prompt for it.
 
@@ -41,6 +42,7 @@ Use whichever configured gateway best matches the user's available providers and
 - **Kling Official:** Set `KLING_API_KEY` to access Kling's official direct API via `provider="kling_official"`.
 - **Gemini API:** Set `GEMINI_API_KEY` or `GOOGLE_API_KEY` to access Gemini Omni video generation and conversational editing.
 - **Pika API:** Set `PIKA_API_KEY` to access Pika H3 Flex via `pika_video`. See Layer 3 `pika-h3-flex` for prompting, reference rules, and billing.
+- **OpenRouter:** Set `OPENROUTER_API_KEY` to reach every model in OpenRouter's video catalog via `openrouter_video`. See Layer 3 `openrouter-video` for model choice, pricing, and catalog validation.
 
 Do not describe any gateway as the default or top choice without checking the registry and current task fit first.
 
