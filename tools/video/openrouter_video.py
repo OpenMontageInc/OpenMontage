@@ -79,6 +79,10 @@ _STATUS_HINTS = {
     502: "The upstream provider failed; another submission is usually fine.",
     503: "No provider is available for this model with the requested settings.",
 }
+_NO_ENDPOINTS_HINT = (
+    "OpenRouter lists the model but no endpoint serves it right now (or none matches the "
+    "provider preferences, such as exclude_data_collection). Try later or pick another model."
+)
 
 _catalog_cache: dict[str, Any] = {"loaded_at": 0.0, "models": None, "source": None}
 
@@ -529,9 +533,18 @@ class OpenRouterVideo(BaseTool):
                 )
             status = str(result.get("status", "")).lower()
             if status in TERMINAL_FAILURES:
+                detail = str(result.get("error") or "no detail")
+                hint = "Do not resubmit blindly; a new submission is a new charge."
+                lowered = detail.lower()
+                if "filtered" in lowered or "content policy" in lowered or "moderation" in lowered:
+                    hint = (
+                        "The provider's safety filter blocked the output; violent or graphic keyframes "
+                        "trigger it even with a softened prompt. Change the keyframe or use another "
+                        "model family (Seedance passed the same frame)."
+                    )
+                    status = "filtered"
                 return self._failure(
-                    f"OpenRouter job {job['id']} {status}: {result.get('error') or 'no detail'}. "
-                    "Do not resubmit blindly; a new submission is a new charge.",
+                    f"OpenRouter job {job['id']} {result.get('status')}: {detail}. {hint}",
                     job=job, started=started, code=status,
                 )
 
@@ -574,6 +587,8 @@ class OpenRouterVideo(BaseTool):
             )
         except OpenRouterAPIError as exc:
             hint = _STATUS_HINTS.get(exc.status or 0, "")
+            if "no endpoints found" in str(exc).lower():
+                hint = _NO_ENDPOINTS_HINT
             return self._failure(
                 f"OpenRouter API error ({exc.status}): {exc}. {hint}".strip(),
                 job=job, started=started, code=exc.code,

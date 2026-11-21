@@ -437,6 +437,28 @@ class TestExecute:
         assert result.data["resume_job"]["id"] == JOB_ID
         assert len(fake_http.by("POST", "/videos")) == 1
 
+    def test_filtered_output_gets_a_specific_hint(self, key, fake_http, tmp_path):
+        filtered = "Video generation completed with no output (content may have been filtered)"
+        happy_path(fake_http, [job("failed", error=filtered)])
+        result = self.run(tmp_path)
+        assert not result.success
+        assert result.data["error_code"] == "filtered"
+        assert "safety filter" in result.error
+        assert len(fake_http.by("POST", "/videos")) == 1
+
+    def test_policy_block_counts_as_filtered(self, key, fake_http, tmp_path):
+        happy_path(fake_http, [job("failed", error="the prompt was blocked by the content policy")])
+        result = self.run(tmp_path)
+        assert result.data["error_code"] == "filtered"
+
+    def test_no_endpoints_hint(self, key, fake_http, tmp_path):
+        fake_http.add("POST", "/videos", FakeResponse(404, {"error": {"code": 404,
+                      "message": "No endpoints found for minimax/hailuo-3-max."}}))
+        result = self.run(tmp_path)
+        assert not result.success
+        assert "no endpoint serves it right now" in result.error
+        assert result.data["retryable"] is False
+
     def test_timeout_returns_resume_job_then_resumes(self, key, fake_http, tmp_path):
         happy_path(fake_http, [job("in_progress")])
         result = self.run(tmp_path, poll_timeout=0.001, poll_interval=0.001)

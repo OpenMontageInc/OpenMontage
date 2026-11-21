@@ -49,6 +49,25 @@ noted. Check the live catalog before a production run: the list changes often.
 | `x-ai/grok-imagine-video-1.5-lite` | $0.03/s at 720p plus $0.01 per input image | 1 to 15 | Very cheap short clips |
 | `runway/gen-4.5` | $0.12/s | 2 to 10 | Runway look, first frame only |
 
+Field test (2026-11-21, painterly dark-fantasy keyframes, 720p, no audio):
+Veo 3.1 Lite stayed closest to the keyframe and rendered the subtler action
+better (a quill staining red). Seedance 2.0 added fire and extra effects that
+the keyframe did not have, and cost four times as much. Prompts that mention
+embers or glow make Seedance escalate further. Start with Veo 3.1 Lite for
+keyframe animation, and move to Seedance only for what Veo refuses (its safety
+filter) or for multi-image references.
+
+Second field test on the same violent keyframe (sword through a chest), 5 s:
+Grok Imagine 1.5 Lite ($0.16) and HeyGen Video 1 at 768p ($0.09, billed
+below the catalog rate and delivered with an audio track although none was
+requested) both rendered it. `tbc/mischief-1` refused the prompt ("blocked by
+the content policy"), and `minimax/hailuo-3-max` answered HTTP 404 "No
+endpoints found" although the catalog listed it.
+
+Verdict on these two tests: Veo 3.1 Lite for keyframe animation; Grok Imagine
+1.5 Lite (judged on par with Kling 2.1 Standard, at $0.16 instead of $0.28 per
+5 s clip) for frames Veo's filter refuses.
+
 Kling is not in OpenRouter's video catalog; use `kling_video` or
 `kling_official_video` for Kling.
 
@@ -114,6 +133,12 @@ checkpoints replace the inline bytes with a size placeholder.
   provider silently.
 - HTTP 429, 502, 503 at submission: nothing was created, so a new submission is
   safe after a pause (`data.retryable: true`).
+- Job `failed` with "completed with no output (content may have been
+  filtered)": the provider's safety filter blocked it (`data.error_code:
+  filtered`). On 2026-11-21 Veo 3.1 Lite blocked a keyframe of a sword through
+  a man's chest twice, even with a softened prompt; Seedance 2.0 animated the
+  same frame. The failed jobs returned no `usage`. Change the keyframe or the
+  model family rather than rewording the prompt.
 - Job `failed`, `cancelled` or `expired`: the error is in the message. A new
   submission is a new charge, so change the prompt or inputs first.
 - Poll timeout: the result carries `data.resume_job`. Call `openrouter_video`
