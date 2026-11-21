@@ -74,7 +74,10 @@ class SubtitleGen(BaseTool):
     }
 
     resource_profile = ResourceProfile(cpu_cores=1, ram_mb=128, vram_mb=0, disk_mb=10)
-    idempotency_key_fields = ["segments", "format", "max_words_per_cue"]
+    idempotency_key_fields = [
+        "segments", "format", "max_chars_per_line", "max_words_per_cue",
+        "highlight_style", "corrections",
+    ]
     side_effects = ["writes subtitle file to output_path"]
     user_visible_verification = [
         "Play video with generated subtitles and verify timing",
