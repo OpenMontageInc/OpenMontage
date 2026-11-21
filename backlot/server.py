@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import subprocess
 import time
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
@@ -346,7 +347,8 @@ def _thumbnail_for(source: Path, width: int) -> Optional[Path]:
         import hashlib
         stat = source.stat()
         key = hashlib.sha1(
-            f"{source}|{stat.st_mtime_ns}|{stat.st_size}|{width}".encode()
+            f"{source}|{stat.st_mtime_ns}|{stat.st_size}|{width}".encode(),
+            usedforsecurity=False,
         ).hexdigest()[:20]
         cached = THUMB_CACHE_DIR / f"{key}.jpg"
         if cached.is_file():
@@ -357,7 +359,6 @@ def _thumbnail_for(source: Path, width: int) -> Optional[Path]:
         import uuid
         tmp = THUMB_CACHE_DIR / f"{key}.{uuid.uuid4().hex[:8]}.tmp.jpg"
         if is_video:
-            import subprocess
             result = subprocess.run(
                 ["ffmpeg", "-y", "-loglevel", "error", "-ss", "1.5",
                  "-i", str(source), "-frames:v", "1",
@@ -374,7 +375,8 @@ def _thumbnail_for(source: Path, width: int) -> Optional[Path]:
                 img.save(tmp, "JPEG", quality=82)
         tmp.replace(cached)
         return cached
-    except Exception:
+    except (OSError, ValueError, subprocess.SubprocessError) as exc:
+        print(f"[backlot] anteprima non disponibile per {source}: {exc}")
         return None
 
 

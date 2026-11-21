@@ -73,8 +73,8 @@ def cmd_open(project_id: str | None) -> int:
         url = f"http://127.0.0.1:{port}/p/{project_id}"
     try:
         webbrowser.open(url)
-    except Exception:
-        pass
+    except (OSError, webbrowser.Error) as exc:
+        print(f"backlot: impossibile aprire il browser ({exc}); apri {url} a mano")
     print(f"backlot: {url}")
     return 0
 

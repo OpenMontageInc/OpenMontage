@@ -53,6 +53,7 @@ from tools.base_tool import (
     ToolStability,
     ToolTier,
 )
+from tools.video.url_policy import is_secure_remote_url
 
 
 class VideoCompose(BaseTool):
@@ -939,7 +940,7 @@ class VideoCompose(BaseTool):
                 return node
             if not isinstance(node, str) or parent_key not in media_keys:
                 return node
-            if node.startswith(("http://", "https://", "data:")):
+            if is_secure_remote_url(node) or node.startswith("data:"):
                 return node
 
             if node.lower().startswith("file://"):

@@ -43,6 +43,7 @@ from tools.base_tool import (
 )
 from tools.provider_jobs import download, poll, save_job
 from tools.provider_pricing import PriceQuoteRequired
+from tools.video.url_policy import is_secure_remote_url
 
 DEFAULT_BASE_URL = "https://api.dev.pika.art"
 MODEL = "pika-h3-flex"
@@ -677,8 +678,8 @@ class PikaVideo(BaseTool):
             raise ValueError(f"Specify the {label} as a URL or a local path, not both")
         if url:
             url = str(url)
-            if not url.startswith(("http://", "https://")):
-                raise ValueError(f"{label} must be an http(s) URL; pass local files via the *_path input")
+            if not is_secure_remote_url(url):
+                raise ValueError(f"{label} must be an https URL (or http on loopback); pass local files via the *_path input")
             return url
         if path:
             if uploading:

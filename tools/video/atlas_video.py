@@ -9,6 +9,7 @@ from typing import Any
 
 from tools import atlas_client
 from tools.atlas_models import VIDEO_MODELS, VIDEO_ROUTES
+from tools.video.url_policy import is_secure_remote_url
 from tools.base_tool import (
     BaseTool,
     Determinism,
@@ -29,7 +30,7 @@ _OPERATIONS = ("text_to_video", "image_to_video", "reference_to_video", "video_e
 
 def _is_remote(entry: str) -> bool:
     lowered = str(entry).strip().lower()
-    return lowered.startswith(("http://", "https://", "data:", "asset://"))
+    return is_secure_remote_url(lowered) or lowered.startswith(("data:", "asset://"))
 
 
 def _media_type(entry: str) -> str:

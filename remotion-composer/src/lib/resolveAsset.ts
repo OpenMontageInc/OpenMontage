@@ -1,8 +1,12 @@
 import { staticFile } from "remotion";
 
+// Solo HTTPS remoto; HTTP e' ammesso unicamente per i server locali di fiducia.
+const isLoopbackHttp = (src: string): boolean =>
+  /^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?(?:\/|$)/i.test(src);
+
 const isRemoteAsset = (src: string): boolean =>
-  src.startsWith("http://") ||
   src.startsWith("https://") ||
+  isLoopbackHttp(src) ||
   src.startsWith("data:");
 
 const isWindowsAbsolutePath = (src: string): boolean =>
@@ -10,6 +14,9 @@ const isWindowsAbsolutePath = (src: string): boolean =>
 
 /** Resolve public assets and absolute filesystem paths consistently. */
 export function resolveAsset(src: string): string {
+  if (src.startsWith("http://") && !isLoopbackHttp(src)) {
+    throw new Error(`resolveAsset: URL non sicura (http), usare https: ${src}`);
+  }
   if (isRemoteAsset(src)) {
     return src;
   }

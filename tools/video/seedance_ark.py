@@ -34,6 +34,7 @@ from tools.base_tool import (
     ToolStatus,
     ToolTier,
 )
+from tools.video.url_policy import is_secure_remote_url
 
 
 class SeedanceArkVideo(BaseTool):
@@ -1191,23 +1192,21 @@ class SeedanceArkVideo(BaseTool):
 
     @staticmethod
     def _is_remote_or_asset(value: str) -> bool:
-        return value.startswith(("https://", "http://", "asset://"))
+        return is_secure_remote_url(value) or value.startswith("asset://")
 
     def _validate_remote_refs(self, refs: list[Any], label: str) -> None:
         for ref in refs:
             value = str(ref)
-            if not value.startswith(("https://", "http://", "asset://")):
+            if not self._is_remote_or_asset(value):
                 raise ValueError(
-                    f"{label} must be a public/signed URL or asset:// ID; "
+                    f"{label} must be a public/signed https URL or asset:// ID; "
                     "Ark does not document video Base64 or local paths"
                 )
 
     def _validate_optional_parameters(self, payload: dict[str, Any]) -> None:
         callback = payload.get("callback_url")
-        if callback is not None and not str(callback).startswith(
-            ("https://", "http://")
-        ):
-            raise ValueError("callback_url must be an http(s) URL")
+        if callback is not None and not is_secure_remote_url(str(callback)):
+            raise ValueError("callback_url must be an https URL (or http on loopback)")
         expires = payload.get("execution_expires_after")
         if expires is not None and not 3600 <= int(expires) <= 259200:
             raise ValueError("execution_expires_after must be between 3600 and 259200")
