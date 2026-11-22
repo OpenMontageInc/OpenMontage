@@ -401,7 +401,8 @@ def depth_title(shot_mov, title, fmt, W, H, td, tmp):
     d0 = ImageDraw.Draw(first)
     while True:
         F = ImageFont.truetype(TITLE_FONT, size); lines = wrap(d0, title.upper().split(), F, maxw)
-        if len(lines) <= (4 if fmt == "v" else 2) or size <= 150: break
+        fits = max(d0.textlength(l, font=F) for l in lines) <= maxw  # one long word can be wider than the frame
+        if (len(lines) <= (4 if fmt == "v" else 2) and fits) or size <= 110: break
         size -= 15
     lh = int(size * 0.88); block = lh * len(lines)
     y0 = max(int(head_top + 0.20 * size) - block, int(H * 0.06))
