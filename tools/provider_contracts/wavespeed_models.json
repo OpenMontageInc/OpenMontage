@@ -1,0 +1,324 @@
+{
+  "bytedance/seedream-v5.5": {
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "aspect_ratio": {
+          "default": "1:1",
+          "description": "The aspect ratio of the generated image. Defaults to 1:1.",
+          "enum": [
+            "1:1",
+            "1:2",
+            "2:1",
+            "1:3",
+            "3:1",
+            "2:3",
+            "3:2",
+            "3:4",
+            "4:3",
+            "4:5",
+            "5:4",
+            "9:16",
+            "16:9",
+            "9:21",
+            "21:9"
+          ],
+          "type": "string",
+          "x-placeholder": "Select aspect ratio"
+        },
+        "background": {
+          "default": "auto",
+          "description": "Whether the image has a transparent background. 'auto' lets the model decide from your prompt and output format; 'transparent' returns a PNG with an alpha channel, whatever output_format is; 'opaque' always returns a solid background.",
+          "enum": [
+            "auto",
+            "transparent",
+            "opaque"
+          ],
+          "type": "string",
+          "x-ui-component": "select"
+        },
+        "output_format": {
+          "default": "png",
+          "description": "The format of the output image. PNG is the default; a transparent background is always returned as PNG.",
+          "enum": [
+            "jpeg",
+            "png"
+          ],
+          "type": "string"
+        },
+        "prompt": {
+          "description": "The positive prompt for the generation.",
+          "type": "string",
+          "x-rows": 10,
+          "x-ui-component": "textarea"
+        },
+        "resolution": {
+          "default": "1k",
+          "description": "The output resolution tier. 1k and 1.5k cost the same; 2k is the highest.",
+          "enum": [
+            "1k",
+            "1.5k",
+            "2k"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "prompt"
+      ],
+      "type": "object",
+      "x-order-properties": [
+        "prompt",
+        "aspect_ratio",
+        "resolution",
+        "output_format",
+        "background"
+      ]
+    },
+    "source": "https://wavespeed.ai/models/bytedance/seedream-v5.5",
+    "verified_on": "2026-11-22"
+  },
+  "bytedance/seedream-v5.5/edit": {
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "aspect_ratio": {
+          "description": "The aspect ratio of the generated image. If not specified, it is determined automatically from the input image.",
+          "enum": [
+            "1:1",
+            "1:2",
+            "2:1",
+            "1:3",
+            "3:1",
+            "2:3",
+            "3:2",
+            "3:4",
+            "4:3",
+            "4:5",
+            "5:4",
+            "9:16",
+            "16:9",
+            "9:21",
+            "21:9"
+          ],
+          "type": "string",
+          "x-placeholder": "Select aspect ratio"
+        },
+        "background": {
+          "default": "auto",
+          "description": "Whether the image has a transparent background. 'auto' lets the model decide from your prompt and output format; 'transparent' returns a PNG with an alpha channel, whatever output_format is; 'opaque' always returns a solid background.",
+          "enum": [
+            "auto",
+            "transparent",
+            "opaque"
+          ],
+          "type": "string",
+          "x-ui-component": "select"
+        },
+        "images": {
+          "description": "The images to edit. A maximum of 10 reference images can be uploaded.",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "type": "array"
+        },
+        "output_format": {
+          "default": "png",
+          "description": "The format of the output image. PNG is the default; a transparent background is always returned as PNG.",
+          "enum": [
+            "jpeg",
+            "png"
+          ],
+          "type": "string"
+        },
+        "prompt": {
+          "description": "The positive prompt for the generation.",
+          "type": "string"
+        },
+        "resolution": {
+          "default": "1k",
+          "description": "The output resolution tier. 1k and 1.5k cost the same; 2k is the highest.",
+          "enum": [
+            "1k",
+            "1.5k",
+            "2k"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "prompt",
+        "images"
+      ],
+      "type": "object",
+      "x-order-properties": [
+        "prompt",
+        "images",
+        "aspect_ratio",
+        "resolution",
+        "output_format",
+        "background"
+      ]
+    },
+    "source": "https://wavespeed.ai/models/bytedance/seedream-v5.5/edit",
+    "verified_on": "2026-11-22"
+  },
+  "alibaba/wan-3.0/text-to-video": {
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "aspect_ratio": {
+          "default": "16:9",
+          "description": "The aspect ratio of the generated video.",
+          "enum": [
+            "16:9",
+            "9:16",
+            "1:1",
+            "4:3",
+            "3:4"
+          ],
+          "type": "string"
+        },
+        "duration": {
+          "default": 5,
+          "description": "The duration of the generated media in seconds (2-30s).",
+          "maximum": 30,
+          "minimum": 2,
+          "type": "integer",
+          "x-ui-component": "slider"
+        },
+        "enable_prompt_expansion": {
+          "default": false,
+          "description": "If set to true, the prompt optimizer will be enabled.",
+          "type": "boolean"
+        },
+        "generate_audio": {
+          "default": true,
+          "description": "Whether to include audio in the generated video.",
+          "type": "boolean",
+          "x-aliases": [
+            "enable_audio"
+          ]
+        },
+        "prompt": {
+          "description": "The positive prompt for the generation.",
+          "type": "string"
+        },
+        "resolution": {
+          "default": "720p",
+          "description": "The resolution of the generated video.",
+          "enum": [
+            "480p",
+            "720p",
+            "1080p"
+          ],
+          "type": "string"
+        },
+        "seed": {
+          "description": "The random seed to use for the generation. -1 means a random seed will be used.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "prompt"
+      ],
+      "type": "object",
+      "x-order-properties": [
+        "prompt",
+        "resolution",
+        "aspect_ratio",
+        "duration",
+        "enable_prompt_expansion",
+        "generate_audio",
+        "seed"
+      ]
+    },
+    "source": "https://wavespeed.ai/models/alibaba/wan-3.0/text-to-video",
+    "verified_on": "2026-11-22"
+  },
+  "alibaba/wan-3.0/image-to-video": {
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "aspect_ratio": {
+          "description": "The aspect ratio of the generated video. If not specified, it is adapted to the input image.",
+          "enum": [
+            "16:9",
+            "9:16",
+            "1:1",
+            "4:3",
+            "3:4"
+          ],
+          "type": "string",
+          "x-placeholder": "Select aspect ratio"
+        },
+        "duration": {
+          "default": 5,
+          "description": "The duration of the generated media in seconds (2-30s).",
+          "maximum": 30,
+          "minimum": 2,
+          "type": "integer",
+          "x-ui-component": "slider"
+        },
+        "enable_prompt_expansion": {
+          "default": false,
+          "description": "If set to true, the prompt optimizer will be enabled.",
+          "type": "boolean"
+        },
+        "generate_audio": {
+          "default": true,
+          "description": "Whether to include audio in the generated video.",
+          "type": "boolean",
+          "x-aliases": [
+            "enable_audio"
+          ]
+        },
+        "image": {
+          "description": "The first frame image for generating the video. Supports URL or Base64-encoded data.",
+          "type": "string"
+        },
+        "last_image": {
+          "description": "The last frame image for generating the video (optional). Supports URL or Base64-encoded data.",
+          "type": "string"
+        },
+        "prompt": {
+          "description": "The positive prompt for the generation.",
+          "type": "string"
+        },
+        "resolution": {
+          "default": "720p",
+          "description": "The resolution of the generated video.",
+          "enum": [
+            "480p",
+            "720p",
+            "1080p"
+          ],
+          "type": "string"
+        },
+        "seed": {
+          "description": "The random seed to use for the generation. -1 means a random seed will be used.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "image",
+        "prompt"
+      ],
+      "type": "object",
+      "x-order-properties": [
+        "prompt",
+        "image",
+        "last_image",
+        "resolution",
+        "aspect_ratio",
+        "duration",
+        "enable_prompt_expansion",
+        "generate_audio",
+        "seed"
+      ]
+    },
+    "source": "https://wavespeed.ai/models/alibaba/wan-3.0/image-to-video",
+    "verified_on": "2026-11-22"
+  }
+}

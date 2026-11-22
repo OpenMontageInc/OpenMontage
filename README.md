@@ -235,6 +235,7 @@ This repo is built for agentic operation. If you're an OpenClaw-style agent, her
 # Image + video gateway:
 FAL_KEY=your-key               # FLUX images + Google Veo, Kling, MiniMax video + Recraft images
 ATLASCLOUD_API_KEY=your-key    # Atlas Cloud — Seedream/Nano Banana/GPT Image + Kling/Seedance/Hailuo video
+WAVESPEED_API_KEY=your-key     # WaveSpeed AI — Seedream 5.5 images/edits + Wan 3.0 text/image-to-video
 
 # Kling official direct API:
 KLING_API_KEY=your-key         # Official Kling video, image, TTS, avatar, lip sync
@@ -494,6 +495,7 @@ Each tool declares which Layer 3 skills it relies on. The agent reads Layer 1 to
 | **Kling (fal.ai)** | Cloud API | High quality, fast via fal.ai gateway |
 | **Kling Official** | Cloud API | Official direct API with separate `kling_official` provider |
 | **Atlas Cloud** | Cloud API | Unified gateway for Seedance, MiniMax, Hunyuan, and other multimodal models |
+| **WaveSpeed AI** | Cloud API | Wan 3.0 text-to-video and image-to-video with native audio |
 | **Seedance 2.0 (Volcengine Ark)** | Cloud API | Official direct API with separate `seedance_ark` provider |
 | **Seedance 2.5 / 2.0** | Cloud API | Text, image, and reference-driven video workflows through supported gateways |
 | **Gemini Omni Flash** | Cloud API | Conversational multimodal video generation and editing |
@@ -525,6 +527,7 @@ Each tool declares which Layer 3 skills it relies on. The agent reads Layer 1 to
 | **Seedream 5.0** | Cloud API | High-fidelity text-to-image and image editing through supported gateways |
 | **Nano Banana 2** | Cloud API | Multimodal image generation and editing |
 | **Atlas Cloud** | Cloud API | Unified access to multiple image-generation model families |
+| **WaveSpeed AI** | Cloud API | Seedream 5.5 generation and multi-reference editing |
 | **Recraft** | Cloud API | Design-focused generation |
 | **Kling Official** | Cloud API | Official direct API for Kling image generation and reference workflows |
 | **Local Diffusion** | Local GPU | Stable Diffusion, free |
