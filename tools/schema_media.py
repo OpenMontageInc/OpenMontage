@@ -1,4 +1,4 @@
-"""Schema-validated Atlas, Replicate and LTX jobs with durable resume metadata."""
+"""Schema-validated Atlas, Replicate, LTX and WaveSpeed jobs with durable resume metadata."""
 
 from __future__ import annotations
 
@@ -23,6 +23,18 @@ from tools.base_tool import (
     ToolResult,
 )
 from tools.provider_jobs import request_json, download, poll, save_job
+
+
+WAVESPEED_API = "https://api.wavespeed.ai/api/v3/"
+
+
+def wavespeed_data(body):
+    """Unwrap a WaveSpeed envelope; a non-200 ``code`` can arrive with HTTP 200."""
+    if body.get("code") != 200 or not isinstance(body.get("data"), dict):
+        raise RuntimeError(
+            f"WaveSpeed error (code {body.get('code')}): {body.get('message') or body}"
+        )
+    return body["data"]
 
 
 def local_image(path):
@@ -308,6 +320,12 @@ class SchemaMedia(BaseTool):
                         headers=headers,
                         json=payload,
                     )["data"]
+                elif self.provider == "wavespeed":
+                    submitted = wavespeed_data(
+                        request_json(
+                            "POST", WAVESPEED_API + endpoint, headers=headers, json=payload
+                        )
+                    )
                 elif self.provider == "replicate":
                     submitted = request_json(
                         "POST",
@@ -340,6 +358,8 @@ class SchemaMedia(BaseTool):
             identifier = quote(str(job["id"]), safe="")
             if self.provider == "atlascloud":
                 url = "https://api.atlascloud.ai/api/v1/model/prediction/" + identifier
+            elif self.provider == "wavespeed":
+                url = WAVESPEED_API + "predictions/" + identifier + "/result"
             elif self.provider == "replicate":
                 url = "https://api.replicate.com/v1/predictions/" + identifier
             else:
@@ -347,6 +367,8 @@ class SchemaMedia(BaseTool):
 
             def fetch():
                 response = request_json("GET", url, headers=headers)
+                if self.provider == "wavespeed":
+                    return wavespeed_data(response)
                 return response["data"] if self.provider == "atlascloud" else response
 
             result = poll(
@@ -356,7 +378,7 @@ class SchemaMedia(BaseTool):
             )
             values = (
                 result.get("outputs")
-                if self.provider == "atlascloud"
+                if self.provider in {"atlascloud", "wavespeed"}
                 else (
                     result.get("output")
                     if self.provider == "replicate"

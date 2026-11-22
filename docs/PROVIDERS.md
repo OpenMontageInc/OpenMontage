@@ -117,6 +117,7 @@ AZURE_SPEECH_REGION=         # Speech resource region, e.g. eastus
 FAL_KEY=                     # FLUX, Recraft, Kling, Veo, MiniMax video
 MINIMAX_API_KEY=             # MiniMax first-party image + MiniMax H3 video generation
 ATLASCLOUD_API_KEY=          # Atlas Cloud image/video gateway
+WAVESPEED_API_KEY=           # WaveSpeed AI image/video generation
 
 # KLING OFFICIAL DIRECT API
 KLING_API_KEY=               # Official Kling video, image, TTS, avatar, lip sync
@@ -570,6 +571,35 @@ suffixes or parameter names as interchangeable.
 Inspect `get_info()["model_catalog"]` for exact IDs, operations, media shapes,
 durations, and resolutions. Prices are estimates sourced from each model's
 machine-readable Atlas page and should be reconfirmed before a paid batch.
+
+---
+
+### WaveSpeed AI — Image and Video Generation
+
+**Tools:** `wavespeed_image`, `wavespeed_video`
+**Env var:** `WAVESPEED_API_KEY` (create one at [wavespeed.ai](https://wavespeed.ai) → API Keys)
+
+Both tools use the shared schema-validated adapter (`tools/schema_media.py`). Each
+request is checked against the model's input schema pinned in
+`tools/provider_contracts/wavespeed_models.json` before anything is submitted, so
+an unknown parameter or out-of-range value fails locally instead of becoming a
+paid job.
+
+| Tool | `model` | Operations | WaveSpeed model |
+|---|---|---|---|
+| `wavespeed_image` | `seedream-v5.5` | `generate`, `edit` (1-10 references in `image_url(s)` / `image_path(s)`) | `bytedance/seedream-v5.5`, `bytedance/seedream-v5.5/edit` |
+| `wavespeed_video` | `wan-3.0` | `text_to_video`, `image_to_video` (first frame in `image_url` or `image_path`) | `alibaba/wan-3.0/text-to-video`, `alibaba/wan-3.0/image-to-video` |
+
+Native fields such as `aspect_ratio`, `resolution`, `output_format`, `duration`,
+`generate_audio` and `seed` pass through under their WaveSpeed names; anything
+else the model accepts goes in `provider_params`. Local images are sent inline as
+data URIs. Select the host explicitly with `hosting_provider: "wavespeed"`.
+
+Jobs are submitted once and never retried automatically. A polling timeout returns
+`resume_job` (also written to `job_path` when given); pass it back to resume the
+same prediction. The tools do not estimate prices: preflight reports
+`cost_status: quote_required` and results carry `cost_usd: null`; check the
+model page on wavespeed.ai before a paid batch.
 
 ---
 
@@ -1566,6 +1596,7 @@ These tools require only FFmpeg or Python packages — no GPU, no API key.
 | **fish.audio** | `FISH_AUDIO_API_KEY` | `fish_audio_tts` | Free tier (s2.1-pro-free) + paid |
 | **fal.ai** | `FAL_KEY` | `flux_image`, `recraft_image`, `kling_video`, `veo_video`, `seedance_video`, `gemini_omni_fal`, `minimax_fal_video` | Pay-as-you-go |
 | **Atlas Cloud** | `ATLASCLOUD_API_KEY` | `atlas_image`, `atlas_video` | Pay-as-you-go |
+| **WaveSpeed AI** | `WAVESPEED_API_KEY` | `wavespeed_image`, `wavespeed_video` | Pay-as-you-go |
 | **Kling Official** | `KLING_API_KEY` | `kling_official_video`, `kling_official_image`, `kling_tts`, `kling_avatar`, `kling_lip_sync` | Pay-as-you-go |
 | **Volcengine Ark** | `ARK_API_KEY` | `seedance_ark` | Pay-as-you-go |
 | **MiniMax direct** | `MINIMAX_API_KEY` | `minimax_image`, `minimax_video` | Pay-as-you-go |
