@@ -1,0 +1,711 @@
+<title>__SHOW__ Reels Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: sticky slate header with tabs (Review / Color / Multicam). Review = responsive grid of reel cards with decisions + notes;
+   Color = big player + grade sliders + shared looks; Multicam = program monitor + 4 angle monitors + cut timeline. */
+:root{
+  --bg:#eef1f2; --surface:#ffffff; --ink:#15202b; --mute:#5d6b76; --line:#d8dee2; --chip:#e7ecef;
+  --accent:#0f6b78; --ok:#1d7a4c; --ok-bg:#e2f3ea; --fix:#b5521a; --fix-bg:#fbeadf;
+  --a-guest:#0f6b78; --a-host:#c47a12; --a-cohost:#8a2a3b; --a-wide:#56636d; --a-splithost:#6b4bb0; --a-splitcohost:#2f8a4f;
+  --display:"Bebas Neue",Impact,"Arial Narrow",sans-serif; --text:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1417; --surface:#182024; --ink:#e8eef1; --mute:#93a2ab; --line:#28333a; --chip:#222c31;
+  --accent:#4fb8c6; --ok:#55c98d; --ok-bg:#163326; --fix:#f0935d; --fix-bg:#3a2417;
+  --a-guest:#4fb8c6; --a-host:#e9a640; --a-cohost:#d4687c; --a-wide:#8a99a4; --a-splithost:#a58be0; --a-splitcohost:#5fc983; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1417; --surface:#182024; --ink:#e8eef1; --mute:#93a2ab; --line:#28333a; --chip:#222c31;
+  --accent:#4fb8c6; --ok:#55c98d; --ok-bg:#163326; --fix:#f0935d; --fix-bg:#3a2417;
+  --a-guest:#4fb8c6; --a-host:#e9a640; --a-cohost:#d4687c; --a-wide:#8a99a4; --a-splithost:#a58be0; --a-splitcohost:#5fc983; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--text);margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1480px;margin:0 auto}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.hrow{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding-block:14px}
+.hrow.tight{padding-block:0 12px}
+h1{font:400 clamp(28px,4vw,38px)/1 var(--display);letter-spacing:.6px;margin:0;text-wrap:balance}
+h2{font:400 26px/1 var(--display);letter-spacing:.5px;margin:0}
+.sub{color:var(--mute);font-size:13px}
+.prog{display:flex;align-items:center;gap:10px;min-width:220px;flex:1}
+.bar{flex:1;height:8px;border-radius:99px;background:var(--chip);overflow:hidden;display:flex;max-width:280px}
+.bar i{display:block;height:100%}.bar .o{background:var(--ok)}.bar .f{background:var(--fix)}
+.counts{font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums;white-space:nowrap}.counts b{color:var(--ink);font-weight:600}
+.tabs{display:flex;gap:4px;border-bottom:0;flex-wrap:wrap}
+.tabs a{font-size:14px;font-weight:600;color:var(--mute);text-decoration:none;padding:7px 14px;border-radius:8px 8px 0 0;border:1px solid transparent;border-bottom:none}
+.tabs a[aria-current="page"]{color:var(--ink);background:var(--surface);border-color:var(--line)}
+.tabs a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.filters,.seg{display:flex;gap:6px;flex-wrap:wrap}
+button,select,input[type=text]{font:inherit;font-size:13px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 11px}
+button{cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,textarea:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.filters button[aria-pressed="true"],.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.banner{font-size:13px;color:var(--mute);padding-block:0 12px}
+.banner[hidden]{display:none}
+.view[hidden]{display:none!important}
+/* ---- review ---- */
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:18px;padding-block:20px 40px}
+#grid.h{grid-template-columns:repeat(auto-fill,minmax(min(420px,100%),1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.card[data-s="approved"]{border-color:var(--ok);box-shadow:0 0 0 1px var(--ok)}
+.card[data-s="changes"]{border-color:var(--fix);box-shadow:0 0 0 1px var(--fix)}
+.vid{position:relative;aspect-ratio:9/16;max-width:100%;background:#000}
+#grid.h .vid{aspect-ratio:16/9}
+.vid video{width:100%;height:100%;display:block;background:#000}
+.vid .pending{position:absolute;inset:0;display:grid;place-items:center;color:#cfd6da;font-size:13px;text-align:center;padding:20px}
+.num{position:absolute;top:10px;left:10px;font:400 22px/1 var(--display);color:#fff;background:rgba(0,0,0,.45);padding:4px 8px 2px;border-radius:6px;pointer-events:none}
+body.prevsel #grid video{filter:url(#sel)}
+.body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:10px;flex:1;min-width:0}
+.t{font-weight:600;line-height:1.3;text-wrap:balance}
+.meta{display:flex;gap:6px;flex-wrap:wrap}
+.chip{background:var(--chip);color:var(--mute);border-radius:6px;padding:2px 7px;font-size:12px;font-variant-numeric:tabular-nums}
+.state{font-size:12px;color:var(--mute);min-height:18px}
+.state .pill{display:inline-block;font-weight:600;border-radius:99px;padding:1px 8px;margin-right:4px}
+.state .pill.approved{background:var(--ok-bg);color:var(--ok)}.state .pill.changes{background:var(--fix-bg);color:var(--fix)}
+.acts{display:flex;gap:6px}.acts button{flex:1}
+.acts .ap[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:#fff}
+.acts .ch[aria-pressed="true"]{background:var(--fix);border-color:var(--fix);color:#fff}
+details{font-size:13px;color:var(--mute)}summary{cursor:pointer;color:var(--ink);font-weight:500}
+details p{margin:6px 0 0;max-height:170px;overflow:auto;line-height:1.55}
+.notes{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:10px}
+.notes h3,.panel h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--mute);font-weight:600}
+.note{display:flex;gap:8px;align-items:flex-start;font-size:13px}
+.note img{width:22px;height:22px;border-radius:50%;flex:none}
+.note .nb{min-width:0;flex:1}.note .who{font-weight:600}.note .when{color:var(--mute);font-size:11px;margin-left:4px}
+.note .txt{white-space:pre-wrap;overflow-wrap:anywhere}
+.note .del,.look .del{border:0;background:none;color:var(--mute);padding:0 2px;font-size:12px}
+.empty{font-size:12px;color:var(--mute)}
+form.add{display:flex;flex-direction:column;gap:6px}
+textarea{width:100%;min-height:56px;resize:vertical;font:inherit;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--bg);color:var(--ink)}
+.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+form.add button{align-self:flex-end}
+.ro form.add,.ro .acts{display:none}
+/* ---- shared two-column studio layout ---- */
+.studio{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,380px);gap:20px;padding-block:20px 40px;align-items:start}
+.stage{display:flex;flex-direction:column;gap:10px;min-width:0;align-items:center}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.player{position:relative;background:#000;border-radius:10px;overflow:hidden;width:100%;max-width:min(100%,calc((100vh - 260px) * 9 / 16));aspect-ratio:9/16}
+.player.h{aspect-ratio:16/9;max-width:100%}
+.player video{width:100%;height:100%;display:block}
+.player video.graded{filter:url(#look)}
+.player.orig video.graded{filter:none}
+.player .tag{position:absolute;top:10px;right:10px;font-size:12px;font-weight:600;color:#fff;background:rgba(0,0,0,.55);padding:3px 8px;border-radius:6px;pointer-events:none}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row > *{min-width:0}
+.slider{display:grid;grid-template-columns:96px minmax(0,1fr) 52px;align-items:center;gap:10px;font-size:13px}
+.slider output{font-variant-numeric:tabular-nums;text-align:right;color:var(--mute)}
+.slider input{width:100%;accent-color:var(--accent)}
+.looks{display:flex;flex-direction:column;gap:6px}
+.look{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:13px}
+.look .lb{flex:1;min-width:0;text-align:left;border:0;background:none;padding:0}
+.look .ln{font-weight:600}.look .lm{color:var(--mute);font-size:12px;display:block}
+.look.sel{border-color:var(--ok);box-shadow:0 0 0 1px var(--ok)}
+.badge{font-size:11px;font-weight:600;color:var(--ok);background:var(--ok-bg);border-radius:99px;padding:1px 7px;white-space:nowrap}
+.check{display:flex;gap:8px;align-items:center;font-size:13px}
+/* ---- multicam ---- */
+.mc-prog{position:relative;width:100%;max-width:min(100%,calc((100vh - 330px) * 9 / 16));aspect-ratio:9/16;background:#000;border-radius:10px;overflow:hidden}
+.mc-prog canvas{width:100%;height:100%;display:block}
+.mc-prog .tag{position:absolute;top:10px;left:10px;font-size:12px;font-weight:600;color:#fff;padding:3px 8px;border-radius:6px;pointer-events:none}
+.angles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%}
+.angle{display:flex;flex-direction:column;gap:4px;border:2px solid transparent;border-radius:8px;padding:0;background:none;cursor:pointer;color:var(--ink);font-size:12px;text-align:left}
+.angle canvas{width:100%;aspect-ratio:9/16;display:block;background:#000;border-radius:6px}
+.angle span{padding:0 2px 2px}
+.angle[aria-pressed="true"]{border-color:var(--ink)}
+.angle kbd,.abtn kbd{font:600 11px var(--text);border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-right:4px;color:var(--mute)}
+.abtns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.abtn{display:flex;align-items:center;gap:6px;justify-content:flex-start}
+.abtn i{width:10px;height:10px;border-radius:3px;flex:none}
+.transport{display:flex;gap:8px;align-items:center;width:100%}
+.transport .time{font-variant-numeric:tabular-nums;font-size:13px;color:var(--mute);margin-left:auto}
+.tl{position:relative;width:100%;height:34px;border-radius:6px;background:var(--chip);overflow:hidden;cursor:pointer;touch-action:none}
+.tl .segm{position:absolute;top:0;bottom:0}
+.tl .ph{position:absolute;top:0;bottom:0;width:2px;background:var(--ink);pointer-events:none}
+.marks{position:relative;width:100%;height:16px}
+.marks button{position:absolute;top:0;transform:translateX(-50%);width:14px;height:14px;padding:0;border-radius:50%;font-size:9px;line-height:12px;border:1px solid var(--line);background:var(--surface);color:var(--mute)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12px;color:var(--mute);width:100%}
+.legend span{display:inline-flex;align-items:center;gap:5px}.legend i{width:10px;height:10px;border-radius:3px}
+.dirty{color:var(--fix);font-weight:600;font-size:13px}
+.saved{color:var(--mute);font-size:13px}
+@media (max-width:900px){.studio{grid-template-columns:1fr}}
+@media (max-width:480px){#grid{grid-template-columns:1fr}.prog{min-width:0;flex-basis:100%}.slider{grid-template-columns:80px minmax(0,1fr) 44px}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+/*__BRAND_CSS__*/
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <filter id="look" color-interpolation-filters="sRGB">
+    <feComponentTransfer><feFuncR id="look-lr" type="linear" slope="1" intercept="0"/><feFuncG id="look-lg" type="linear" slope="1" intercept="0"/><feFuncB id="look-lb" type="linear" slope="1" intercept="0"/></feComponentTransfer>
+    <feComponentTransfer><feFuncR id="look-gr" type="gamma" amplitude="1" exponent="1" offset="0"/><feFuncG id="look-gg" type="gamma" amplitude="1" exponent="1" offset="0"/><feFuncB id="look-gb" type="gamma" amplitude="1" exponent="1" offset="0"/></feComponentTransfer>
+    <feColorMatrix id="look-sat" type="saturate" values="1"/>
+  </filter>
+  <filter id="sel" color-interpolation-filters="sRGB">
+    <feComponentTransfer><feFuncR id="sel-lr" type="linear" slope="1" intercept="0"/><feFuncG id="sel-lg" type="linear" slope="1" intercept="0"/><feFuncB id="sel-lb" type="linear" slope="1" intercept="0"/></feComponentTransfer>
+    <feComponentTransfer><feFuncR id="sel-gr" type="gamma" amplitude="1" exponent="1" offset="0"/><feFuncG id="sel-gg" type="gamma" amplitude="1" exponent="1" offset="0"/><feFuncB id="sel-gb" type="gamma" amplitude="1" exponent="1" offset="0"/></feComponentTransfer>
+    <feColorMatrix id="sel-sat" type="saturate" values="1"/>
+  </filter>
+</svg>
+
+<header><div class="wrap">
+  <div class="hrow">
+    <div><h1>__SHOW__ · Reels Review</h1><div class="sub">__SUB__</div></div>
+    <div class="prog"><div class="bar" aria-hidden="true"><i class="o" id="bo"></i><i class="f" id="bf"></i></div><span class="counts" id="counts">Loading decisions…</span></div>
+  </div>
+  <div class="hrow tight">
+    <nav class="tabs" aria-label="Sections">
+      <a href="#review" data-tab="review">Review</a>
+      <a href="#color" data-tab="color">Color</a>
+      <a href="#multicam" data-tab="multicam">Multicam</a>
+    </nav>
+    <div class="seg" role="group" aria-label="Format" id="fmtbar">
+      <button type="button" data-fmt="v" aria-pressed="true">Vertical 9:16</button>
+      <button type="button" data-fmt="h" aria-pressed="false">Horizontal 16:9</button>
+    </div>
+  </div>
+  <div class="hrow tight" id="reviewbar">
+    <div class="filters" role="group" aria-label="Filter reels">
+      <button type="button" data-f="all" aria-pressed="true">All</button>
+      <button type="button" data-f="1" aria-pressed="false">Avi</button>
+      <button type="button" data-f="2" aria-pressed="false">Adam</button>
+      <button type="button" data-f="open" aria-pressed="false">Undecided</button>
+      <button type="button" data-f="changes" aria-pressed="false">Needs changes</button>
+      <button type="button" data-f="approved" aria-pressed="false">Approved</button>
+    </div>
+    <button type="button" id="copy">Copy decisions &amp; notes</button>
+  </div>
+  <div class="banner" id="banner" hidden></div>
+</div></header>
+
+<div class="wrap">
+  <section class="view" id="view-review"><div id="grid"></div></section>
+
+  <section class="view" id="view-color" hidden>
+    <div class="studio">
+      <div class="stage">
+        <div class="player" id="c-player"><video id="c-video" class="graded" controls playsinline preload="metadata"></video><span class="tag" id="c-tag" hidden>Original</span></div>
+        <div class="row">
+          <button type="button" id="c-hold">Hold to see original</button>
+          <button type="button" id="c-reset">Reset sliders</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="row"><label for="c-reel" class="sub">Reel</label><select id="c-reel" style="flex:1"></select></div>
+        <h3>Adjust</h3>
+        <div id="c-sliders"></div>
+        <h3>Save this look</h3>
+        <form class="row" id="c-save">
+          <input type="text" id="c-name" placeholder="Look name, e.g. Warmer skin" maxlength="60" style="flex:1 1 160px" aria-label="Look name">
+          <select id="c-scope" aria-label="Apply to"><option value="all">All reels</option><option value="reel">This reel</option></select>
+          <button type="submit" class="primary" id="c-savebtn">Save look</button>
+        </form>
+        <h3>Team looks</h3>
+        <div class="sub" id="c-selected">No look selected for the final render yet.</div>
+        <div class="looks" id="c-looks"><div class="empty">No saved looks yet.</div></div>
+        <label class="check"><input type="checkbox" id="c-prev"> Preview selected look on Review tab</label>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="view-multicam" hidden>
+    <div class="studio">
+      <div class="stage">
+        <div class="mc-prog"><canvas id="m-prog" width="540" height="960"></canvas><span class="tag" id="m-tag"></span></div>
+        <div class="transport">
+          <button type="button" id="m-play">Play</button>
+          <span class="time" id="m-time">0:00.0 / 0:00.0</span>
+        </div>
+        <div class="tl" id="m-tl" role="slider" aria-label="Timeline" tabindex="0" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0"></div>
+        <div class="marks" id="m-marks"></div>
+        <div class="legend" id="m-legend"></div>
+        <div class="angles" id="m-angles"></div>
+        <video id="m-src" playsinline preload="auto" crossorigin="anonymous" hidden></video>
+      </div>
+      <div class="panel">
+        <div class="row"><label for="m-reel" class="sub">Reel</label><select id="m-reel" style="flex:1"></select></div>
+        <h3>Cut to</h3>
+        <div class="abtns" id="m-btns"></div>
+        <div class="sub">Press a button or number key while it plays to cut at that moment. Click a dot under the timeline to remove that cut.</div>
+        <div class="row"><span id="m-status" class="saved">Auto edit</span></div>
+        <div class="row">
+          <button type="button" id="m-reset">Reset to auto edit</button>
+          <button type="button" class="primary" id="m-save">Save edit</button>
+        </div>
+        <div class="sub" id="m-ro" hidden>You can watch the edit here. Ask the owner for Contributor access to change cuts.</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+/* Capabilities on publish:
+   {db:{rules:[{path:"grade",read:"view",write:"admin"}]}, user:{scopes:["profile"]}, assets:{}}
+   DB: reviews/{reelId} {status,by,at} · notes/{auto} {reel,text,by,at} · looks/{auto} {name,scope,params,by,at}
+       grade/selected {lookId,by,at} (editors only) · edits/{reelId} {cuts:[{t,angle}],by,at} */
+const REELS = __DATA__;
+const SRC = __SRC__;
+const src = (id, f) => { const s = SRC[id]; if (!s) return ""; if (typeof s === "string") return f === "v" ? s : ""; return s[f] || ""; };
+const state = { reviews:{}, notes:[], looks:[], selected:null, edits:{}, me:null, canWrite:true, canEdit:false, filter:"all", fmt:"v", tab:"review", db:null, user:null, ps:{} };
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch(e){ return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch(e){} };
+const $ = (id) => document.getElementById(id);
+const grid = $("grid"), banner = $("banner");
+const say = (t) => { banner.textContent = t; banner.hidden = !t; };
+const fmt = (iso) => { try { const d = new Date(iso); return d.toLocaleDateString(undefined,{month:"short",day:"numeric"}) + " " + d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"}); } catch(e){ return ""; } };
+const tfmt = (s) => { s = Math.max(0, s || 0); return Math.floor(s / 60) + ":" + (s % 60).toFixed(1).padStart(4, "0"); };
+async function names(ids){
+  if (!state.user) return state.ps;
+  try { const r = await state.user.profiles([...new Set(ids.filter(Boolean))]); Object.assign(state.ps, r); } catch(e) {}
+  return state.ps;
+}
+const nm = (id) => (state.ps[id] && state.ps[id].name) || "Someone";
+
+/* ================= REVIEW ================= */
+function build(){
+  REELS.forEach((r) => {
+    const c = document.createElement("article"); c.className = "card"; c.id = "reel-" + r.id.slice(0,2);
+    c.innerHTML = `
+      <div class="vid"><video controls preload="metadata" playsinline></video><div class="pending" hidden>Video uploading…</div><span class="num">${r.id.slice(0,2)}</span></div>
+      <div class="body">
+        <div class="t"></div>
+        <div class="meta"><span class="chip g"></span><span class="chip">${r.dur}s</span><span class="chip">Session ${r.session} · ${r.src}</span></div>
+        <div class="state"></div>
+        <div class="acts"><button type="button" class="ap" aria-pressed="false">Approve</button><button type="button" class="ch" aria-pressed="false">Needs changes</button></div>
+        <details><summary>Transcript</summary><p></p></details>
+        <section class="notes"><h3>Notes</h3><div class="list"><div class="empty">No notes yet.</div></div>
+          <form class="add"><textarea id="note-${r.id.slice(0,2)}" placeholder="Trim, retitle, caption fix…" aria-label="Note for reel ${r.id.slice(0,2)}"></textarea><button type="submit" class="primary">Add note</button></form>
+        </section>
+      </div>`;
+    c.querySelector(".t").textContent = r.title;
+    c.querySelector(".g").textContent = r.guest;
+    c.querySelector("details p").textContent = r.text;
+    const v = c.querySelector("video");
+    v.addEventListener("play", () => document.querySelectorAll("video").forEach((o) => { if (o !== v) o.pause(); }));
+    c.querySelector(".ap").addEventListener("click", () => decide(r.id, "approved"));
+    c.querySelector(".ch").addEventListener("click", () => decide(r.id, "changes"));
+    c.querySelector("form").addEventListener("submit", (e) => { e.preventDefault(); addNote(r.id, c.querySelector("textarea")); });
+    r.el = c; grid.appendChild(c);
+  });
+  setCardSources();
+}
+function setCardSources(){
+  grid.classList.toggle("h", state.fmt === "h");
+  REELS.forEach((r) => {
+    const v = r.el.querySelector("video"), p = r.el.querySelector(".pending");
+    const s = src(r.id, state.fmt);
+    if (v.getAttribute("src") !== s) { v.pause(); if (s) v.setAttribute("src", s); else v.removeAttribute("src"); v.load(); }
+    v.hidden = !s; p.hidden = !!s;
+    p.textContent = state.fmt === "h" && src(r.id, "v") ? "Horizontal version not uploaded yet." : "Video uploading…";
+  });
+}
+async function render(){
+  const ids = [];
+  Object.values(state.reviews).forEach((v) => ids.push(v.by));
+  state.notes.forEach((n) => ids.push(n.by));
+  await names(ids);
+  let a = 0, f = 0;
+  REELS.forEach((r) => {
+    const rv = state.reviews[r.id] || {}; const s = rv.status || "";
+    if (s === "approved") a++; if (s === "changes") f++;
+    const c = r.el; c.dataset.s = s;
+    c.querySelector(".ap").setAttribute("aria-pressed", s === "approved");
+    c.querySelector(".ch").setAttribute("aria-pressed", s === "changes");
+    const st = c.querySelector(".state"); st.textContent = "";
+    if (s) {
+      const p = document.createElement("span"); p.className = "pill " + s; p.textContent = s === "approved" ? "Approved" : "Needs changes";
+      st.append(p, document.createTextNode("by " + nm(rv.by) + (rv.at ? " · " + fmt(rv.at) : "")));
+    } else st.textContent = "Undecided";
+    const list = c.querySelector(".list"); list.textContent = "";
+    const mine = state.notes.filter((n) => n.reel === r.id);
+    if (!mine.length) { const e = document.createElement("div"); e.className = "empty"; e.textContent = "No notes yet."; list.append(e); }
+    mine.forEach((n) => {
+      const row = document.createElement("div"); row.className = "note";
+      const img = document.createElement("img"); img.alt = ""; if (state.ps[n.by]) img.src = state.ps[n.by].avatarUrl;
+      const nb = document.createElement("div"); nb.className = "nb";
+      const who = document.createElement("span"); who.className = "who"; who.textContent = nm(n.by);
+      const when = document.createElement("span"); when.className = "when"; when.textContent = fmt(n.at);
+      const txt = document.createElement("div"); txt.className = "txt"; txt.textContent = n.text;
+      nb.append(who, when, txt); row.append(img, nb);
+      if (state.me && n.by === state.me && state.canWrite) {
+        const del = document.createElement("button"); del.type = "button"; del.className = "del"; del.textContent = "Delete"; del.setAttribute("aria-label", "Delete note");
+        del.addEventListener("click", () => state.db.doc("notes/" + n.id).delete().catch(() => say("Couldn't delete that note. Try again.")));
+        row.append(del);
+      }
+      list.append(row);
+    });
+    const fl = state.filter; let show = true;
+    if (fl === "1" || fl === "2") show = String(r.session) === fl;
+    else if (fl === "open") show = !s; else if (fl === "changes" || fl === "approved") show = s === fl;
+    c.hidden = !show;
+  });
+  const n = REELS.length;
+  $("bo").style.width = (a / n * 100) + "%";
+  $("bf").style.width = (f / n * 100) + "%";
+  const cnt = $("counts"); cnt.textContent = "";
+  const b = (x) => { const e = document.createElement("b"); e.textContent = x; return e; };
+  cnt.append(b(a), " approved · ", b(f), " need changes · ", b(n - a - f), " undecided");
+}
+async function decide(id, s){
+  if (!state.db || !state.me) return;
+  const cur = (state.reviews[id] || {}).status;
+  const next = cur === s ? "" : s;
+  try { await state.db.doc("reviews/" + id).set({ status: next, by: state.me, at: new Date().toISOString() }); }
+  catch(e) { if (e && e.code === "invalid_argument") readOnly(); else say("Couldn't save that decision. Try again."); }
+}
+async function addNote(id, ta){
+  const text = ta.value.trim(); if (!text || !state.db || !state.me) return;
+  ta.disabled = true;
+  try { await state.db.collection("notes").add({ reel: id, text: text.slice(0, 2000), by: state.me, at: new Date().toISOString() }); ta.value = ""; }
+  catch(e) { if (e && e.code === "invalid_argument") readOnly(); else say("Couldn't add that note. Try again."); }
+  ta.disabled = false;
+}
+function readOnly(msg){
+  state.canWrite = false; document.body.classList.add("ro");
+  say(msg || "You can watch and read notes here. Ask the owner for Contributor access to approve reels, save looks or edit cuts.");
+  render(); renderLooks(); mcSyncUI();
+}
+
+/* ================= COLOR ================= */
+const SL = [
+  { k:"ev", label:"Exposure", min:-0.5, max:0.5, step:0.01, def:0, show:(v) => (v > 0 ? "+" : "") + v.toFixed(2) },
+  { k:"contrast", label:"Contrast", min:0.7, max:1.4, step:0.01, def:1, show:(v) => v.toFixed(2) },
+  { k:"mid", label:"Midtones", min:-50, max:50, step:1, def:0, show:(v) => (v > 0 ? "+" : "") + v },
+  { k:"sat", label:"Saturation", min:0, max:2, step:0.01, def:1, show:(v) => v.toFixed(2) },
+  { k:"temp", label:"Temperature", min:-100, max:100, step:1, def:0, show:(v) => (v > 0 ? "+" : "") + v },
+  { k:"tint", label:"Tint", min:-100, max:100, step:1, def:0, show:(v) => (v > 0 ? "+" : "") + v },
+];
+const DEF = () => Object.fromEntries(SL.map((s) => [s.k, s.def]));
+let params = DEF();
+/* Exact grade math (reproduced in ffmpeg, same order):
+   gains g=2^ev; R*=g*(1+0.10*temp/100); G*=g*(1-0.08*tint/100); B*=g*(1-0.10*temp/100)
+   contrast: x=x*c+0.5*(1-c)  -> one linear transfer: slope=gain*c, intercept=0.5*(1-c)
+   midtones: gamma exponent = 2^(-mid/100); saturation: feColorMatrix saturate */
+function applyFilter(prefix, p){
+  const g = Math.pow(2, p.ev), c = p.contrast;
+  const gains = { r: g * (1 + 0.10 * p.temp / 100), g: g * (1 - 0.08 * p.tint / 100), b: g * (1 - 0.10 * p.temp / 100) };
+  const icpt = (0.5 * (1 - c)).toFixed(5), gam = Math.pow(2, -p.mid / 100).toFixed(5);
+  [["r","lr","gr"],["g","lg","gg"],["b","lb","gb"]].forEach(([ch, l, gm]) => {
+    const fl = $(prefix + "-" + l); fl.setAttribute("slope", (gains[ch] * c).toFixed(5)); fl.setAttribute("intercept", icpt);
+    $(prefix + "-" + gm).setAttribute("exponent", gam);
+  });
+  $(prefix + "-sat").setAttribute("values", String(p.sat));
+}
+function buildColor(){
+  const box = $("c-sliders");
+  SL.forEach((s) => {
+    const row = document.createElement("div"); row.className = "slider";
+    row.innerHTML = `<label for="sl-${s.k}">${s.label}</label><input type="range" id="sl-${s.k}" min="${s.min}" max="${s.max}" step="${s.step}" value="${s.def}"><output for="sl-${s.k}" id="out-${s.k}"></output>`;
+    box.append(row);
+    const inp = row.querySelector("input");
+    inp.addEventListener("input", () => { params[s.k] = parseFloat(inp.value); syncSliders(); });
+    inp.addEventListener("dblclick", () => { params[s.k] = s.def; syncSliders(); });
+  });
+  const sel = $("c-reel");
+  REELS.forEach((r) => { const o = document.createElement("option"); o.value = r.id; o.textContent = r.id.slice(0,2) + " · " + r.title; sel.append(o); });
+  sel.value = lsGet("cReel", REELS[0].id); if (!sel.value) sel.value = REELS[0].id;
+  sel.addEventListener("change", () => { lsSet("cReel", sel.value); setColorSource(); });
+  const hold = $("c-hold"), pl = $("c-player");
+  const on = (e) => { e.preventDefault(); pl.classList.add("orig"); $("c-tag").hidden = false; };
+  const off = () => { pl.classList.remove("orig"); $("c-tag").hidden = true; };
+  hold.addEventListener("pointerdown", on); ["pointerup","pointerleave","pointercancel","blur"].forEach((ev) => hold.addEventListener(ev, off));
+  hold.addEventListener("keydown", (e) => { if (e.key === " " || e.key === "Enter") on(e); });
+  hold.addEventListener("keyup", off);
+  $("c-reset").addEventListener("click", () => { params = DEF(); syncSliders(); });
+  $("c-save").addEventListener("submit", (e) => { e.preventDefault(); saveLook(); });
+  const prev = $("c-prev"); prev.checked = lsGet("prevSel", "0") === "1";
+  prev.addEventListener("change", () => { lsSet("prevSel", prev.checked ? "1" : "0"); applySelectedPreview(); });
+  syncSliders(); setColorSource();
+}
+function syncSliders(){
+  SL.forEach((s) => { $("sl-" + s.k).value = params[s.k]; $("out-" + s.k).textContent = s.show(params[s.k]); });
+  applyFilter("look", params);
+}
+function setColorSource(){
+  const v = $("c-video"), id = $("c-reel").value, s = src(id, state.fmt) || src(id, "v");
+  $("c-player").classList.toggle("h", state.fmt === "h" && !!src(id, "h"));
+  if (v.getAttribute("src") !== s) { v.pause(); if (s) v.setAttribute("src", s); else v.removeAttribute("src"); v.load(); }
+}
+async function saveLook(){
+  if (!state.db || !state.me) return say("Sign in to claude.ai to save looks.");
+  const name = $("c-name").value.trim() || "Untitled look";
+  const scope = $("c-scope").value === "reel" ? $("c-reel").value : "all";
+  const btn = $("c-savebtn"); btn.disabled = true;
+  try { await state.db.collection("looks").add({ name: name.slice(0, 60), scope, params: { ...params }, by: state.me, at: new Date().toISOString() }); $("c-name").value = ""; }
+  catch(e) { if (e && e.code === "invalid_argument") readOnly(); else say("Couldn't save that look. Try again."); }
+  btn.disabled = !state.canWrite;
+}
+async function selectLook(id){
+  if (!state.db || !state.canEdit) return;
+  try {
+    if (state.selected && state.selected.lookId === id) await state.db.doc("grade/selected").set({ lookId: "", by: state.me, at: new Date().toISOString() });
+    else await state.db.doc("grade/selected").set({ lookId: id, by: state.me, at: new Date().toISOString() });
+  } catch(e) { say("Only editors can choose the look for the final render."); }
+}
+const scopeLabel = (s) => s === "all" ? "All reels" : "Reel " + String(s).slice(0,2);
+async function renderLooks(){
+  await names(state.looks.map((l) => l.by).concat(state.selected ? [state.selected.by] : []));
+  const box = $("c-looks"); box.textContent = "";
+  const selId = state.selected && state.selected.lookId;
+  const selLook = state.looks.find((l) => l.id === selId);
+  $("c-selected").textContent = selLook ? `Final render look: “${selLook.name}” (${scopeLabel(selLook.scope)}) · chosen by ${nm(state.selected.by)}` : "No look selected for the final render yet.";
+  if (!state.looks.length) { const e = document.createElement("div"); e.className = "empty"; e.textContent = "No saved looks yet."; box.append(e); }
+  state.looks.forEach((l) => {
+    const row = document.createElement("div"); row.className = "look" + (l.id === selId ? " sel" : "");
+    const lb = document.createElement("button"); lb.type = "button"; lb.className = "lb"; lb.title = "Load into sliders";
+    const ln = document.createElement("span"); ln.className = "ln"; ln.textContent = l.name;
+    const lm = document.createElement("span"); lm.className = "lm"; lm.textContent = scopeLabel(l.scope) + " · " + nm(l.by) + " · " + fmt(l.at);
+    lb.append(ln, lm);
+    lb.addEventListener("click", () => { params = { ...DEF(), ...(l.params || {}) }; syncSliders(); if (l.scope !== "all") { $("c-reel").value = l.scope; setColorSource(); } });
+    row.append(lb);
+    if (l.id === selId) { const bd = document.createElement("span"); bd.className = "badge"; bd.textContent = "Final render"; row.append(bd); }
+    if (state.canEdit) {
+      const u = document.createElement("button"); u.type = "button"; u.textContent = l.id === selId ? "Unselect" : "Use for final render";
+      u.addEventListener("click", () => selectLook(l.id)); row.append(u);
+    }
+    if (state.me && l.by === state.me && state.canWrite) {
+      const del = document.createElement("button"); del.type = "button"; del.className = "del"; del.textContent = "Delete"; del.setAttribute("aria-label", "Delete look " + l.name);
+      del.addEventListener("click", () => state.db.doc("looks/" + l.id).delete().catch(() => say("Couldn't delete that look.")));
+      row.append(del);
+    }
+    box.append(row);
+  });
+  $("c-savebtn").disabled = !state.canWrite;
+  applySelectedPreview();
+}
+function applySelectedPreview(){
+  const selId = state.selected && state.selected.lookId;
+  const l = state.looks.find((x) => x.id === selId);
+  const on = !!l && $("c-prev").checked;
+  if (l) applyFilter("sel", { ...DEF(), ...(l.params || {}) });
+  document.body.classList.toggle("prevsel", on);
+}
+
+/* ================= MULTICAM ================= */
+const LBL = __LABELS__;
+const ANG = {
+  guest:{ label:LBL.guest, key:"1", q:[0,0], color:"--a-guest" },
+  host:{ label:LBL.host, key:"2", q:[1,0], color:"--a-host" },
+  cohost:{ label:LBL.cohost, key:"3", q:[0,1], color:"--a-cohost" },
+  wide:{ label:"Wide", key:"4", q:[1,1], color:"--a-wide" },
+  "split-host":{ label:"Split: " + LBL.guest.toLowerCase() + " + " + LBL.host, key:"5", split:["guest","host"], color:"--a-splithost" },
+  "split-cohost":{ label:"Split: " + LBL.guest.toLowerCase() + " + " + LBL.cohost, key:"6", split:["guest","cohost"], color:"--a-splitcohost" },
+};
+const ANG_KEYS = Object.keys(ANG);
+const cssv = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || "#888";
+const mc = { id:null, cuts:[], auto:[], dirty:false, raf:0, dragging:false };
+const mv = $("m-src"), prog = $("m-prog"), pctx = prog.getContext("2d");
+const angCanvas = {};
+function buildMulticam(){
+  const sel = $("m-reel");
+  REELS.forEach((r) => { const o = document.createElement("option"); o.value = r.id; o.textContent = r.id.slice(0,2) + " · " + r.title; sel.append(o); });
+  sel.value = lsGet("mReel", REELS[0].id); if (!sel.value) sel.value = REELS[0].id;
+  sel.addEventListener("change", () => {
+    if (mc.dirty && !window.__mcConfirmed) { say("You had unsaved cuts on the previous reel. They were discarded."); }
+    lsSet("mReel", sel.value); loadReel(sel.value);
+  });
+  const angBox = $("m-angles");
+  ["guest","host","cohost","wide"].forEach((k) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "angle"; b.dataset.a = k; b.setAttribute("aria-pressed", "false");
+    const cv = document.createElement("canvas"); cv.width = 180; cv.height = 320; angCanvas[k] = cv.getContext("2d");
+    const sp = document.createElement("span"); sp.innerHTML = `<kbd>${ANG[k].key}</kbd>`; sp.append(document.createTextNode(ANG[k].label));
+    b.append(cv, sp); b.addEventListener("click", () => cutTo(k)); angBox.append(b);
+  });
+  const btns = $("m-btns"), leg = $("m-legend");
+  ANG_KEYS.forEach((k) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "abtn"; b.dataset.a = k;
+    const i = document.createElement("i"); i.style.background = `var(${ANG[k].color})`;
+    const kb = document.createElement("kbd"); kb.textContent = ANG[k].key;
+    b.append(i, kb, document.createTextNode(ANG[k].label)); b.addEventListener("click", () => cutTo(k)); btns.append(b);
+    const s = document.createElement("span"); const li = document.createElement("i"); li.style.background = `var(${ANG[k].color})`; s.append(li, document.createTextNode(ANG[k].label)); leg.append(s);
+  });
+  $("m-play").addEventListener("click", () => { if (mv.paused) mv.play().catch(() => {}); else mv.pause(); });
+  mv.addEventListener("play", () => { $("m-play").textContent = "Pause"; });
+  mv.addEventListener("pause", () => { $("m-play").textContent = "Play"; });
+  mv.addEventListener("loadedmetadata", () => { drawTimeline(); });
+  const tl = $("m-tl");
+  const seek = (e) => { const r = tl.getBoundingClientRect(); const d = mv.duration || durOf(mc.id); if (!d) return; mv.currentTime = Math.min(d, Math.max(0, (e.clientX - r.left) / r.width * d)); };
+  tl.addEventListener("pointerdown", (e) => { mc.dragging = true; tl.setPointerCapture(e.pointerId); seek(e); });
+  tl.addEventListener("pointermove", (e) => { if (mc.dragging) seek(e); });
+  ["pointerup","pointercancel"].forEach((ev) => tl.addEventListener(ev, () => { mc.dragging = false; }));
+  tl.addEventListener("keydown", (e) => { if (e.key === "ArrowRight") { mv.currentTime += 1; e.preventDefault(); } if (e.key === "ArrowLeft") { mv.currentTime -= 1; e.preventDefault(); } });
+  $("m-reset").addEventListener("click", () => { mc.cuts = mc.auto.map((c) => ({ ...c })); mc.dirty = !!state.edits[mc.id]; drawTimeline(); mcSyncUI(); });
+  $("m-save").addEventListener("click", saveEdit);
+  document.addEventListener("keydown", (e) => {
+    if (state.tab !== "multicam" || e.metaKey || e.ctrlKey || e.altKey) return;
+    const tg = e.target.tagName; if (tg === "INPUT" || tg === "TEXTAREA" || tg === "SELECT") return;
+    if (e.key === " " && tg !== "BUTTON") { e.preventDefault(); $("m-play").click(); return; }
+    const k = ANG_KEYS.find((a) => ANG[a].key === e.key);
+    if (k) { e.preventDefault(); cutTo(k); }
+  });
+  window.addEventListener("beforeunload", (e) => { if (mc.dirty) { e.preventDefault(); e.returnValue = ""; } });
+  loadReel(sel.value);
+}
+const durOf = (id) => { const r = REELS.find((x) => x.id === id); return r ? r.dur : 0; };
+function normCuts(cuts){
+  const c = (cuts || []).filter((x) => x && ANG[x.angle] && isFinite(x.t)).map((x) => ({ t: Math.max(0, +x.t), angle: x.angle })).sort((a, b) => a.t - b.t);
+  if (!c.length || c[0].t > 0.0001) c.unshift({ t: 0, angle: (c[0] && c[0].angle) || "guest" });
+  c[0].t = 0;
+  const out = [];
+  c.forEach((x) => { if (out.length && out[out.length - 1].angle === x.angle) return; if (out.length && x.t - out[out.length - 1].t < 0.05) { out[out.length - 1] = x; return; } out.push(x); });
+  return out;
+}
+function loadReel(id){
+  mc.id = id;
+  const r = REELS.find((x) => x.id === id);
+  mc.auto = normCuts(r.shots);
+  const saved = state.edits[id];
+  mc.cuts = normCuts(saved ? saved.cuts : mc.auto);
+  mc.dirty = false;
+  const s = src(id, "q");
+  mv.pause();
+  if (s) { mv.setAttribute("src", s); mv.load(); } else { mv.removeAttribute("src"); mv.load(); }
+  drawTimeline(); mcSyncUI(); drawFrame();
+}
+function angleAt(t){ let a = mc.cuts[0] ? mc.cuts[0].angle : "guest"; for (const c of mc.cuts) { if (c.t <= t + 1e-6) a = c.angle; else break; } return a; }
+function cutTo(k){
+  const t = mv.currentTime || 0;
+  let cuts = mc.cuts.filter((c) => Math.abs(c.t - t) >= 0.3 || c.t === 0);
+  if (t < 0.3) cuts[0] = { t: 0, angle: k };
+  else cuts.push({ t: Math.round(t * 100) / 100, angle: k });
+  mc.cuts = normCuts(cuts); mc.dirty = true;
+  drawTimeline(); mcSyncUI(); drawFrame();
+}
+function removeCut(i){ if (i <= 0) return; mc.cuts.splice(i, 1); mc.cuts = normCuts(mc.cuts); mc.dirty = true; drawTimeline(); mcSyncUI(); drawFrame(); }
+function drawTimeline(){
+  const tl = $("m-tl"), mk = $("m-marks"); tl.textContent = ""; mk.textContent = "";
+  const d = mv.duration || durOf(mc.id) || 1;
+  tl.setAttribute("aria-valuemax", String(Math.round(d)));
+  mc.cuts.forEach((c, i) => {
+    const end = i + 1 < mc.cuts.length ? mc.cuts[i + 1].t : d;
+    const s = document.createElement("div"); s.className = "segm";
+    s.style.left = (c.t / d * 100) + "%"; s.style.width = (Math.max(0, end - c.t) / d * 100) + "%"; s.style.background = `var(${ANG[c.angle].color})`;
+    s.title = ANG[c.angle].label + " · " + tfmt(c.t);
+    tl.append(s);
+    if (i > 0) {
+      const b = document.createElement("button"); b.type = "button"; b.textContent = "×"; b.style.left = (c.t / d * 100) + "%";
+      b.setAttribute("aria-label", "Remove cut at " + tfmt(c.t)); b.title = "Remove cut at " + tfmt(c.t);
+      b.addEventListener("click", () => removeCut(i)); mk.append(b);
+    }
+  });
+  const ph = document.createElement("div"); ph.className = "ph"; ph.id = "m-ph"; tl.append(ph);
+}
+async function mcSyncUI(){
+  const saved = state.edits[mc.id];
+  const st = $("m-status");
+  if (mc.dirty) { st.className = "dirty"; st.textContent = "Unsaved changes"; }
+  else if (saved) { await names([saved.by]); st.className = "saved"; st.textContent = "Edited by " + nm(saved.by) + " · " + fmt(saved.at); }
+  else { st.className = "saved"; st.textContent = "Auto edit (from the speaker detection)"; }
+  // anyone can try cuts; only saving needs claude.ai + write access
+  const ro = !state.canWrite || !state.db;
+  $("m-save").disabled = ro || !mc.dirty;
+  $("m-ro").textContent = !state.db ? "Try any cuts here. To save them for the final render, open this page on claude.ai."
+    : "Try any cuts here. Saving them needs Contributor access, so ask the owner if you want yours used.";
+  $("m-ro").hidden = !ro;
+}
+async function saveEdit(){
+  if (!state.db || !state.me || !mc.dirty) return;
+  const id = mc.id, cuts = mc.cuts.map((c) => ({ t: Math.round(c.t * 100) / 100, angle: c.angle }));
+  $("m-save").disabled = true;
+  try { await state.db.doc("edits/" + id).set({ cuts, by: state.me, at: new Date().toISOString() }); if (mc.id === id) mc.dirty = false; }
+  catch(e) { if (e && e.code === "invalid_argument") readOnly(); else say("Couldn't save the edit. Try again."); }
+  mcSyncUI();
+}
+function quadRect(k){ const w = mv.videoWidth / 2, h = mv.videoHeight / 2; const [cx, cy] = ANG[k].q; return [cx * w, cy * h, w, h]; }
+function drawFrame(){
+  const W = prog.width, H = prog.height;
+  const ok = mv.readyState >= 2 && mv.videoWidth;
+  const a = angleAt(mv.currentTime || 0);
+  pctx.fillStyle = "#000"; pctx.fillRect(0, 0, W, H);
+  if (ok) {
+    if (ANG[a].split) {
+      ANG[a].split.forEach((k, i) => {
+        const [sx, sy, sw, sh] = quadRect(k);
+        const ch = sw * (H / 2) / W;            // crop height for a W x H/2 slot
+        const oy = sy;  // top-anchored: keeps the headroom from the quad feed
+        pctx.drawImage(mv, sx, oy, sw, ch, 0, i * H / 2, W, H / 2);
+      });
+      pctx.fillStyle = "rgba(0,0,0,.6)"; pctx.fillRect(0, H / 2 - 1, W, 2);
+    } else {
+      const [sx, sy, sw, sh] = quadRect(a); pctx.drawImage(mv, sx, sy, sw, sh, 0, 0, W, H);
+    }
+    ["guest","host","cohost","wide"].forEach((k) => { const [sx, sy, sw, sh] = quadRect(k); angCanvas[k].drawImage(mv, sx, sy, sw, sh, 0, 0, 180, 320); });
+  } else {
+    pctx.fillStyle = "#cfd6da"; pctx.font = "500 22px Inter, system-ui, sans-serif"; pctx.textAlign = "center";
+    pctx.fillText(src(mc.id, "q") ? "Loading angles…" : "Multicam angles not uploaded yet", W / 2, H / 2);
+  }
+  const tag = $("m-tag"); tag.textContent = ANG[a].label; tag.style.background = `var(${ANG[a].color})`;
+  document.querySelectorAll("#m-angles .angle").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.a === a || (ANG[a].split || []).includes(b.dataset.a))));
+  document.querySelectorAll("#m-btns .abtn").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.a === a)));
+  const d = mv.duration || durOf(mc.id) || 1;
+  const ph = $("m-ph"); if (ph) ph.style.left = ((mv.currentTime || 0) / d * 100) + "%";
+  $("m-tl").setAttribute("aria-valuenow", String(Math.round(mv.currentTime || 0)));
+  $("m-time").textContent = tfmt(mv.currentTime) + " / " + tfmt(mv.duration || durOf(mc.id));
+}
+function loop(){ drawFrame(); mc.raf = state.tab === "multicam" ? requestAnimationFrame(loop) : 0; }
+
+/* ================= TABS / FORMAT ================= */
+function showTab(){
+  const h = (location.hash || "#review").slice(1);
+  const tab = ["review","color","multicam"].includes(h) ? h : "review";
+  state.tab = tab;
+  ["review","color","multicam"].forEach((t) => { $("view-" + t).hidden = t !== tab; });
+  document.querySelectorAll(".tabs a").forEach((a) => { if (a.dataset.tab === tab) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+  $("reviewbar").hidden = tab !== "review";
+  $("fmtbar").hidden = tab === "multicam";
+  document.querySelectorAll("video").forEach((v) => { if (!v.closest("#view-" + tab)) v.pause(); });
+  if (tab === "multicam" && !mc.raf) { drawTimeline(); mc.raf = requestAnimationFrame(loop); }
+}
+window.addEventListener("hashchange", showTab);
+document.querySelectorAll("[data-fmt]").forEach((b) => b.addEventListener("click", () => {
+  state.fmt = b.dataset.fmt; lsSet("fmt", state.fmt);
+  document.querySelectorAll("[data-fmt]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  setCardSources(); setColorSource();
+}));
+document.querySelectorAll("[data-f]").forEach((btn) => btn.addEventListener("click", () => {
+  state.filter = btn.dataset.f;
+  document.querySelectorAll("[data-f]").forEach((x) => x.setAttribute("aria-pressed", String(x === btn)));
+  render();
+}));
+$("copy").addEventListener("click", async () => {
+  await names(state.notes.map((n) => n.by));
+  const lines = REELS.map((r) => {
+    const s = (state.reviews[r.id] || {}).status;
+    const ns = state.notes.filter((n) => n.reel === r.id).map((n) => "    - " + nm(n.by) + ": " + n.text.replace(/\n/g, " "));
+    return `${r.id} [${s === "approved" ? "APPROVED" : s === "changes" ? "NEEDS CHANGES" : "UNDECIDED"}] ${r.title}` + (ns.length ? "\n" + ns.join("\n") : "");
+  });
+  const text = lines.join("\n"); const btn = $("copy");
+  try { await navigator.clipboard.writeText(text); btn.textContent = "Copied"; setTimeout(() => btn.textContent = "Copy decisions & notes", 1500); }
+  catch(e) { say("Copy isn't allowed here. Select the text below instead."); let pre = $("copy-fallback"); if (!pre) { pre = document.createElement("textarea"); pre.id = "copy-fallback"; pre.style.minHeight = "200px"; banner.after(pre); } pre.value = text; pre.select(); }
+});
+
+state.fmt = lsGet("fmt", "v") === "h" ? "h" : "v";
+document.querySelectorAll("[data-fmt]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.fmt === state.fmt)));
+build(); buildColor(); buildMulticam(); render(); renderLooks(); showTab();
+
+(async () => {
+  if (!window.claude || !window.claude.use) { readOnlyQuiet("Open this page on claude.ai to approve reels, save looks and edit cuts."); return; }
+  const [db, user] = await Promise.all([claude.use("db"), claude.use("user")]);
+  state.user = user;
+  if (!db) { readOnlyQuiet("Sign in to claude.ai to see decisions, looks and edits."); return; }
+  state.db = db;
+  state.me = user ? await user.id() : null;
+  state.canEdit = user ? await user.canEdit() : false;
+  const cw = user ? await user.can("data.write") : null;
+  if (cw === false || !state.me) readOnly();
+  const timer = setTimeout(() => say("Can't reach saved data yet. It'll appear when the connection returns."), 10000);
+  const settle = (snap) => { if (!snap.metadata.fromCache) { clearTimeout(timer); if (banner.textContent.startsWith("Can't reach")) say(""); } };
+  const lost = (what) => () => { clearTimeout(timer); say(what + " stopped updating. Reload the page to reconnect."); };
+  db.collection("reviews").onSnapshot((snap) => { state.reviews = {}; snap.docs.forEach((d) => state.reviews[d.id] = d.data()); settle(snap); render(); }, lost("Decisions"));
+  db.collection("notes").orderBy("at").onSnapshot((snap) => { state.notes = snap.docs.map((d) => ({ id: d.id, ...d.data() })); settle(snap); render(); }, lost("Notes"));
+  db.collection("looks").orderBy("at").onSnapshot((snap) => { state.looks = snap.docs.map((d) => ({ id: d.id, ...d.data() })); settle(snap); renderLooks(); }, lost("Looks"));
+  db.doc("grade/selected").onSnapshot((d) => { state.selected = d.exists && d.data().lookId ? d.data() : null; renderLooks(); }, lost("The selected look"));
+  db.collection("edits").onSnapshot((snap) => {
+    state.edits = {}; snap.docs.forEach((d) => state.edits[d.id] = d.data()); settle(snap);
+    if (!mc.dirty && mc.id) { const s = state.edits[mc.id]; mc.cuts = normCuts(s ? s.cuts : mc.auto); drawTimeline(); }
+    mcSyncUI();
+  }, lost("Edits"));
+  renderLooks(); mcSyncUI();
+})();
+function readOnlyQuiet(msg){ readOnly(msg); $("counts").textContent = "Decisions show when signed in"; }
+</script>

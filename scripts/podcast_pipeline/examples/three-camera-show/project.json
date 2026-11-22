@@ -1,0 +1,233 @@
+{
+ "show": {
+  "name": "Example Show",
+  "slug": "example-show",
+  "subtitle": "Reels and full episodes from one shoot"
+ },
+ "footage_root": "/path/to/SHOOT_FOLDER",
+ "out_root": "REELS",
+ "outputs": {
+  "vertical": "",
+  "horizontal": "horizontal",
+  "quad": "web/quad",
+  "fcpxml": "FCPXML",
+  "fcp_media": "FCP MEDIA"
+ },
+ "work": "work",
+ "cache": "~/.cache/podcast-editing-pipeline/example-show",
+ "venv": "~/.venvs/podcast-editing-pipeline",
+ "personmask": "~/.cache/podcast-editing-pipeline/bin/personmask",
+ "lut": "luts/your_camera_lut.cube",
+ "timeline_fps": "24000/1001",
+ "source_resolution": [
+  3840,
+  2160
+ ],
+ "cameras": {
+  "a7s3": {
+   "label": "A7S III",
+   "role": "two_shot",
+   "reference": true,
+   "rate": "24000/1001",
+   "log": true,
+   "timecode": "ignore",
+   "grade": "lut",
+   "h_closeup": "half"
+  },
+  "fx3": {
+   "label": "FX3",
+   "role": "guest",
+   "files": "VIDEO FOOTAGE/FX3/*.MP4",
+   "rate": "24000/1001",
+   "log": true,
+   "timecode": "ignore",
+   "grade": "lut",
+   "h_closeup": "full"
+  },
+  "osmo": {
+   "label": "Osmo Pocket 3",
+   "role": "wide",
+   "files": "VIDEO FOOTAGE/OSMO/DJI/*.MP4",
+   "rate": "25",
+   "log": false,
+   "timecode": "tmcd",
+   "grade": "filter",
+   "filter": "colorlevels=rimin=0.13:gimin=0.13:bimin=0.13:rimax=0.61:gimax=0.61:bimax=0.61:romin=0.16:gomin=0.16:bomin=0.16:romax=0.75:gomax=0.75:bomax=0.75,eq=saturation=1.3",
+   "vertical_crop": [
+    1380,
+    230
+   ]
+  }
+ },
+ "recorder": {
+  "label": "Rodecaster",
+  "files": "AUDIO/**/Stereo Mix.wav",
+  "mix": "Stereo Mix.wav"
+ },
+ "people": {
+  "guest": {
+   "label": "Guest",
+   "camera": "fx3",
+   "face_x": 1720,
+   "face_y": 430,
+   "mic": "Track1-Combo 1.wav",
+   "face_x_by_session": {
+    "2": 1580
+   }
+  },
+  "host": {
+   "label": "Host",
+   "camera": "a7s3",
+   "face_x": 2240,
+   "face_y": 820,
+   "mic": "Track2-Combo 2.wav"
+  },
+  "cohost": {
+   "label": "Co-host",
+   "camera": "a7s3",
+   "face_x": 500,
+   "face_y": 700,
+   "mic": "Track3-Combo 3.wav"
+  }
+ },
+ "sessions": [
+  {
+   "id": 1,
+   "guest": "Guest 1",
+   "ref_file": "VIDEO FOOTAGE/A7SIII/SESSION1_A7.MP4",
+   "media": {
+    "fx3": [
+     {
+      "file": "VIDEO FOOTAGE/FX3/SESSION1_FX3.MP4",
+      "offset": 11.25
+     }
+    ],
+    "osmo": [
+     {
+      "file": "VIDEO FOOTAGE/OSMO/SESSION1_OSMO_1.MP4",
+      "offset": 72.03,
+      "duration": 1668.2
+     },
+     {
+      "file": "VIDEO FOOTAGE/OSMO/SESSION1_OSMO_2.MP4",
+      "offset": 1740.22,
+      "duration": 1668.16
+     },
+     {
+      "file": "VIDEO FOOTAGE/OSMO/SESSION1_OSMO_3.MP4",
+      "offset": 3408.34,
+      "duration": 272.08
+     }
+    ]
+   },
+   "recorder": [
+    {
+     "dir": "AUDIO/SESSION1_TAKE1",
+     "offset": 42.44,
+     "duration": 3597.7
+    }
+   ]
+  },
+  {
+   "id": 2,
+   "guest": "Guest 2",
+   "ref_file": "VIDEO FOOTAGE/A7SIII/SESSION2_A7.MP4",
+   "media": {
+    "fx3": [
+     {
+      "file": "VIDEO FOOTAGE/FX3/SESSION2_FX3.MP4",
+      "offset": -2.74
+     }
+    ],
+    "osmo": [
+     {
+      "file": "VIDEO FOOTAGE/OSMO/SESSION2_OSMO_1.MP4",
+      "offset": 4.25,
+      "duration": 1668.16
+     },
+     {
+      "file": "VIDEO FOOTAGE/OSMO/SESSION2_OSMO_2.MP4",
+      "offset": 1672.39,
+      "duration": 1668.16
+     },
+     {
+      "file": "VIDEO FOOTAGE/OSMO/SESSION2_OSMO_3.MP4",
+      "offset": 3340.5,
+      "duration": 451.92
+     }
+    ]
+   },
+   "recorder": [
+    {
+     "dir": "AUDIO/SESSION2_TAKE1",
+     "offset": 0.54,
+     "duration": 3084.9
+    },
+    {
+     "dir": "AUDIO/SESSION2_TAKE2",
+     "offset": 3158.67,
+     "duration": 629.3
+    }
+   ]
+  }
+ ],
+ "transcribe": {
+  "model": "mlx-community/whisper-large-v3-turbo",
+  "language": "en"
+ },
+ "transcript_fixes": {
+  "Whisper misspelling": "Correct spelling"
+ },
+ "style": {
+  "title_dur": 2.8,
+  "headroom": 0.07,
+  "min_turn": 0.5,
+  "guest_cu": 5.0,
+  "guest_split": 3.0,
+  "host_cu_max": 8.0
+ },
+ "fonts": {
+  "title_file": "/Library/Fonts/BebasNeue-Regular.ttf",
+  "caption_file": "/Library/Fonts/Inter-Medium.ttf",
+  "fcp_title_font": "Avenir Next Condensed",
+  "fcp_title_face": "Heavy"
+ },
+ "audio_filter": "highpass=f=70,acompressor=threshold=-20dB:ratio=2.5:attack=10:release=200,loudnorm=I=-14:TP=-1.5:LRA=9",
+ "brand": {
+  "title_ink_dark": [
+   22,
+   26,
+   30
+  ],
+  "title_ink_light": [
+   255,
+   255,
+   255
+  ],
+  "light": {
+   "accent": "#0f6b78",
+   "guest": "#0f6b78",
+   "host": "#c47a12",
+   "cohost": "#8a2a3b",
+   "wide": "#56636d",
+   "splithost": "#6b4bb0",
+   "splitcohost": "#2f8a4f"
+  },
+  "dark": {
+   "accent": "#4fb8c6",
+   "guest": "#4fb8c6",
+   "host": "#e9a640",
+   "cohost": "#d4687c",
+   "wide": "#8a99a4",
+   "splithost": "#a58be0",
+   "splitcohost": "#5fc983"
+  }
+ },
+ "fcp": {
+  "event": "Example Show Reels",
+  "fcpxml_name": "Example Show Reels.fcpxml",
+  "lut_keyword": "Apply Camera LUT",
+  "episodes_event": "Example Show Episodes",
+  "episodes_fcpxml_name": "Example Show Episodes.fcpxml"
+ }
+}
