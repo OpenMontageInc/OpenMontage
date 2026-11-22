@@ -1,27 +1,27 @@
 ---
-name: uberllm-video
+name: martllm-video
 description: |
-  Generate video through UberLLM (`uberllm_video`): Seedance 2.0, Wan 2.7, Kling 3 Standard, Veo 3.1 Fast, LTX 2.3 Fast, Hailuo 02 and Vidu Q3 Turbo on one UberLLM key, for text-to-video, image-to-video (first frame) and reference-to-video. Covers picking a model family, the fixed clip lengths each model takes, the free exact price check, billing, and resume after a polling timeout.
+  Generate video through MartLLM (`martllm_video`): Seedance 2.0, Wan 2.7, Kling 3 Standard, Veo 3.1 Fast, LTX 2.3 Fast, Hailuo 02 and Vidu Q3 Turbo on one MartLLM key, for text-to-video, image-to-video (first frame) and reference-to-video. Covers picking a model family, the fixed clip lengths each model takes, the free exact price check, billing, and resume after a polling timeout.
 ---
 
-# UberLLM video
+# MartLLM video
 
-`uberllm_video` sends video jobs to UberLLM (`https://api.uberllm.dev`). One
-`UBERLLM_API_KEY` reaches several video model families, and the same key and
-prepaid balance also serve UberLLM's image, music and speech models, so a
+`martllm_video` sends video jobs to MartLLM (`https://api.martllm.com`). One
+`MARTLLM_API_KEY` reaches several video model families, and the same key and
+prepaid balance also serve MartLLM's image, music and speech models, so a
 production that needs more than video does not need another account.
 
 ## Route and billing
 
 | Item | Value |
 |------|-------|
-| Tool | `uberllm_video` |
-| Credential | `UBERLLM_API_KEY` (starts with `ull_`) from https://uberllm.dev/signup |
+| Tool | `martllm_video` |
+| Credential | `MARTLLM_API_KEY` (starts with `ull_`) from https://martllm.com/signup |
 | Billing | Prepaid credit, pay as you go from $5. Failed, canceled and expired jobs cost nothing. A finished job is billed what the provider charged, never more than `data.max_cost_usd`. |
-| Prices | Live per-model prices at https://uberllm.dev/models. Pinned per-second rates in `tools/provider_contracts/uberllm_video.json` are for preflight estimates only. |
+| Prices | Live per-model prices at https://martllm.com/models. Pinned per-second rates in `tools/provider_contracts/martllm_video.json` are for preflight estimates only. |
 | Cost reporting | `cost_usd` is the job's `usage.cost_usd`. `data.cost_status` is `settled` or `pending` (the exact charge usually arrives within 30 seconds of the file; until then the listed price is reported). |
 
-Set `dry_run: true` to have UberLLM check the request (model, length, picture)
+Set `dry_run: true` to have MartLLM check the request (model, length, picture)
 and return its exact quote without generating or charging. Set `max_cost_usd`
 to have a job refused at no charge when it could cost more than that.
 
@@ -31,7 +31,7 @@ $0.50 and the first time a new paid tool is used.
 ## Choosing a model
 
 Pass a family as `model`; the operation picks its text, image or reference
-route. An exact UberLLM model id also works (see `get_info()["model_catalog"]`).
+route. An exact MartLLM model id also works (see `get_info()["model_catalog"]`).
 
 | Family | Operations | Good for |
 |--------|------------|----------|
@@ -50,7 +50,7 @@ Draft on a low-cost family, then rerun the approved take on a premium one.
 | Operation | Inputs |
 |-----------|--------|
 | `text_to_video` | `prompt` |
-| `image_to_video` | `prompt` + `reference_image_url` (https://) or `reference_image_path` (uploaded to UberLLM, kept 24 hours) |
+| `image_to_video` | `prompt` + `reference_image_url` (https://) or `reference_image_path` (uploaded to MartLLM, kept 24 hours) |
 | `reference_to_video` | `prompt` + up to 8 `reference_image_urls` / `reference_image_paths` |
 
 Operation is inferred from the inputs when omitted. Pictures with
@@ -69,11 +69,11 @@ Operation is inferred from the inputs when omitted. Pictures with
 
 ## Failure handling
 
-- `insufficient_balance`: add credit at https://uberllm.dev/dashboard/credits.
+- `insufficient_balance`: add credit at https://martllm.com/dashboard/credits.
   Do not switch provider silently.
-- A busy moment is retried by UberLLM itself (same job, same price ceiling);
+- A busy moment is retried by MartLLM itself (same job, same price ceiling);
   `failed` means every try failed, and it costs nothing.
-- Poll timeout: the result carries `data.resume_job`. Call `uberllm_video` again
+- Poll timeout: the result carries `data.resume_job`. Call `martllm_video` again
   with that object (and a longer `poll_timeout`) to keep waiting on the same job
   instead of paying for a new one. Set `job_path` to persist the checkpoint.
 - The tool never retries a paid submission on its own. Finished files are kept

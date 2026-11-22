@@ -1,9 +1,9 @@
 {
   "_about": {
-    "provider": "uberllm",
-    "base_url": "https://api.uberllm.dev",
-    "auth_header": "Authorization: Bearer <UBERLLM_API_KEY>",
-    "docs": "https://uberllm.dev/docs/media",
+    "provider": "martllm",
+    "base_url": "https://api.martllm.com",
+    "auth_header": "Authorization: Bearer <MARTLLM_API_KEY>",
+    "docs": "https://martllm.com/docs/media",
     "models_list": "GET /v1/models?type=video (public)",
     "model_schema": "GET /v1/models/{model_id} (public; parameters is the request JSON Schema)",
     "submit": "POST /v1/video/generations (Idempotency-Key header)",

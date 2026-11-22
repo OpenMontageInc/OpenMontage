@@ -1,8 +1,8 @@
-"""Contract tests for the UberLLM video provider.
+"""Contract tests for the MartLLM video provider.
 
 Every HTTP call is faked; the suite's network guard would block a real one.
 
-Run: pytest tests/contracts/test_uberllm_video.py -v
+Run: pytest tests/contracts/test_martllm_video.py -v
 """
 
 from __future__ import annotations
@@ -16,11 +16,11 @@ from jsonschema import ValidationError
 
 from tools.base_tool import BaseTool, ResumeSupport, ToolRuntime, ToolStability, ToolStatus, ToolTier
 from tools.provider_pricing import PriceQuoteRequired
-from tools.video import uberllm_video as module
-from tools.video.uberllm_video import DEFAULT_FAMILY, FAMILIES, MODEL_SPECS, UberLLMVideo
+from tools.video import martllm_video as module
+from tools.video.martllm_video import DEFAULT_FAMILY, FAMILIES, MODEL_SPECS, MartLLMVideo
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-BASE = "https://api.uberllm.dev"
+BASE = "https://api.martllm.com"
 JOB_ID = "6f1c2a9e-3b7d-4e0a-9c26-31d4f2a8e6b0"
 VIDEO_URL = f"{BASE}/v1/media/artifacts/{JOB_ID}/0"
 SEEDANCE_T2V = "bytedance/seedance-2-0-text-to-video"
@@ -102,14 +102,14 @@ def fake_http(monkeypatch):
 
 
 @pytest.fixture()
-def uberllm_env(monkeypatch):
-    monkeypatch.setenv("UBERLLM_API_KEY", "ull_test_key")
-    monkeypatch.delenv("UBERLLM_BASE_URL", raising=False)
+def martllm_env(monkeypatch):
+    monkeypatch.setenv("MARTLLM_API_KEY", "ull_test_key")
+    monkeypatch.delenv("MARTLLM_BASE_URL", raising=False)
 
 
 @pytest.fixture()
-def no_uberllm_env(monkeypatch):
-    monkeypatch.delenv("UBERLLM_API_KEY", raising=False)
+def no_martllm_env(monkeypatch):
+    monkeypatch.delenv("MARTLLM_API_KEY", raising=False)
 
 
 def happy_path(fake: FakeRequests, *, polls=None, model=SEEDANCE_T2V, estimate=0.76):
@@ -124,18 +124,18 @@ def happy_path(fake: FakeRequests, *, polls=None, model=SEEDANCE_T2V, estimate=0
 
 class TestContract:
     def test_identity(self):
-        tool = UberLLMVideo()
+        tool = MartLLMVideo()
         assert isinstance(tool, BaseTool)
-        assert (tool.name, tool.provider, tool.capability) == ("uberllm_video", "uberllm", "video_generation")
+        assert (tool.name, tool.provider, tool.capability) == ("martllm_video", "martllm", "video_generation")
         assert tool.tier == ToolTier.GENERATE
         assert tool.stability == ToolStability.BETA
         assert tool.runtime == ToolRuntime.API
         assert tool.resume_support == ResumeSupport.FROM_CHECKPOINT
-        assert tool.dependencies == ["env:UBERLLM_API_KEY"]
+        assert tool.dependencies == ["env:MARTLLM_API_KEY"]
         assert tool.retry_policy.max_retries == 0
 
     def test_input_schema(self):
-        props = UberLLMVideo().input_schema["properties"]
+        props = MartLLMVideo().input_schema["properties"]
         for name in ("prompt", "operation", "model", "duration", "resolution", "aspect_ratio", "generate_audio",
                      "reference_image_url", "reference_image_path", "reference_image_urls", "reference_image_paths",
                      "max_cost_usd", "dry_run", "output_path", "job_path", "resume_job"):
@@ -144,21 +144,21 @@ class TestContract:
 
     def test_schema_does_not_advertise_image_url(self):
         """video_selector uploads reference_image_path to fal for tools that expose image_url;
-        uberllm_video uploads to UberLLM itself, so it must not advertise that name."""
-        props = UberLLMVideo().input_schema["properties"]
+        martllm_video uploads to MartLLM itself, so it must not advertise that name."""
+        props = MartLLMVideo().input_schema["properties"]
         assert "image_url" not in props and "image_path" not in props
 
     def test_default_family_serves_every_operation_first(self):
-        routes = UberLLMVideo().models
+        routes = MartLLMVideo().models
         assert next(iter(routes)) == DEFAULT_FAMILY
         assert set(routes[DEFAULT_FAMILY]) == {"text_to_video", "image_to_video", "reference_to_video"}
 
     def test_agent_skill_pointers_resolve(self):
-        for skill in UberLLMVideo().agent_skills:
+        for skill in MartLLMVideo().agent_skills:
             assert (REPO_ROOT / ".agents" / "skills" / skill / "SKILL.md").exists(), skill
 
     def test_contract_file_is_consistent(self):
-        contract = json.loads((REPO_ROOT / "tools" / "provider_contracts" / "uberllm_video.json").read_text("utf-8"))
+        contract = json.loads((REPO_ROOT / "tools" / "provider_contracts" / "martllm_video.json").read_text("utf-8"))
         assert contract["_about"]["verified_on"]
         for family, routes in contract["families"].items():
             for operation, model_id in routes.items():
@@ -167,10 +167,10 @@ class TestContract:
                 assert spec["input_schema"]["properties"]["model"]["const"] == model_id
                 assert spec["usd_per_second"]["default"] > 0
 
-    def test_get_info_serializes_with_billing_and_catalog(self, uberllm_env):
-        info = UberLLMVideo().get_info()
+    def test_get_info_serializes_with_billing_and_catalog(self, martllm_env):
+        info = MartLLMVideo().get_info()
         json.dumps(info)
-        assert info["hosting_provider"] == "uberllm"
+        assert info["hosting_provider"] == "martllm"
         assert info["billing"]["prepaid"] is True and info["billing"]["free_tier"] is False
         assert info["model_catalog"][VIDU_T2V]["usd_per_second"]["360p"] == pytest.approx(0.02975)
 
@@ -182,21 +182,21 @@ class TestContract:
 class TestDiscoveryAndStatus:
     def test_registry_discovers_tool(self, isolated_tool_registry):
         isolated_tool_registry.discover()
-        tool = isolated_tool_registry.get("uberllm_video")
+        tool = isolated_tool_registry.get("martllm_video")
         assert tool is not None
         assert tool in isolated_tool_registry.get_by_capability("video_generation")
 
-    def test_unavailable_without_key(self, no_uberllm_env):
-        assert UberLLMVideo().get_status() == ToolStatus.UNAVAILABLE
+    def test_unavailable_without_key(self, no_martllm_env):
+        assert MartLLMVideo().get_status() == ToolStatus.UNAVAILABLE
 
-    def test_available_with_key_and_no_network(self, uberllm_env, fake_http):
-        assert UberLLMVideo().get_status() == ToolStatus.AVAILABLE
+    def test_available_with_key_and_no_network(self, martllm_env, fake_http):
+        assert MartLLMVideo().get_status() == ToolStatus.AVAILABLE
         assert fake_http.calls == []
 
-    def test_execute_without_key_fails_with_setup_hint(self, no_uberllm_env):
-        result = UberLLMVideo().execute({"prompt": "a harbor at dawn"})
+    def test_execute_without_key_fails_with_setup_hint(self, no_martllm_env):
+        result = MartLLMVideo().execute({"prompt": "a harbor at dawn"})
         assert result.success is False
-        assert "UBERLLM_API_KEY" in result.error and "uberllm.dev/signup" in result.error
+        assert "MARTLLM_API_KEY" in result.error and "martllm.com/signup" in result.error
 
 
 # ------------------------------------------------------------------
@@ -212,22 +212,22 @@ class TestEstimates:
         ({"prompt": "x", "reference_image_urls": ["https://a/1.png"]}, 0.05368 * 5),
     ])
     def test_estimate_from_pinned_rates(self, inputs, expected):
-        assert UberLLMVideo().estimate_cost(inputs) == pytest.approx(expected)
+        assert MartLLMVideo().estimate_cost(inputs) == pytest.approx(expected)
 
     def test_estimate_of_local_media_never_uploads(self, fake_http, tmp_path):
         inputs = {"prompt": "x", "reference_image_path": str(tmp_path / "missing.png")}
-        assert UberLLMVideo().estimate_cost(inputs) == pytest.approx(0.0704 * 5)
+        assert MartLLMVideo().estimate_cost(inputs) == pytest.approx(0.0704 * 5)
         assert fake_http.calls == []
 
     def test_unpinned_resolution_requires_quote(self, monkeypatch):
         spec = MODEL_SPECS[VIDU_T2V]
         monkeypatch.setitem(spec, "usd_per_second", {"default": 0.06545})
         with pytest.raises(PriceQuoteRequired):
-            UberLLMVideo().estimate_cost({"prompt": "x", "model": VIDU_T2V, "resolution": "1080p"})
+            MartLLMVideo().estimate_cost({"prompt": "x", "model": VIDU_T2V, "resolution": "1080p"})
 
     def test_resume_estimate_is_the_saved_estimate(self, fake_http):
-        saved = {"id": JOB_ID, "tool": "uberllm_video", "estimated_cost_usd": 0.48}
-        assert UberLLMVideo().estimate_cost({"resume_job": saved}) == pytest.approx(0.48)
+        saved = {"id": JOB_ID, "tool": "martllm_video", "estimated_cost_usd": 0.48}
+        assert MartLLMVideo().estimate_cost({"resume_job": saved}) == pytest.approx(0.48)
         assert fake_http.calls == []
 
 
@@ -237,7 +237,7 @@ class TestEstimates:
 
 class TestPayload:
     def build(self, inputs):
-        return UberLLMVideo()._build_request(inputs, {}, mode="estimate")
+        return MartLLMVideo()._build_request(inputs, {}, mode="estimate")
 
     def test_text_to_video_defaults(self):
         op, model_id, payload = self.build({"prompt": "A calm harbor at dawn"})
@@ -287,9 +287,9 @@ class TestPayload:
 # ------------------------------------------------------------------
 
 class TestLifecycle:
-    def test_submit_poll_download(self, uberllm_env, fake_http, tmp_path):
+    def test_submit_poll_download(self, martllm_env, fake_http, tmp_path):
         happy_path(fake_http)
-        result = UberLLMVideo().execute({"prompt": "x", "max_cost_usd": 1.0, "output_path": str(tmp_path / "o.mp4")})
+        result = MartLLMVideo().execute({"prompt": "x", "max_cost_usd": 1.0, "output_path": str(tmp_path / "o.mp4")})
         assert result.success, result.error
         submit = fake_http.by("POST", "/v1/video/generations")[0]
         assert submit["headers"]["Authorization"] == "Bearer ull_test_key"
@@ -301,41 +301,41 @@ class TestLifecycle:
         assert result.data["cost_status"] == "settled"
         assert result.data["max_cost_usd"] == pytest.approx(0.836)
 
-    def test_key_is_not_sent_to_a_foreign_download_host(self, uberllm_env, fake_http, tmp_path):
+    def test_key_is_not_sent_to_a_foreign_download_host(self, martllm_env, fake_http, tmp_path):
         foreign = "https://cdn.example.com/clip.mp4"
         fake_http.add("POST", "/v1/video/generations", submitted())
         done = job("succeeded")
         done["results"][0]["url"] = foreign
         fake_http.add("GET", f"/v1/video/generations/{JOB_ID}", done)
         fake_http.add("GET", foreign, FakeResponse(200, content=b"mp4"))
-        assert UberLLMVideo().execute({"prompt": "x", "output_path": str(tmp_path / "o.mp4")}).success
+        assert MartLLMVideo().execute({"prompt": "x", "output_path": str(tmp_path / "o.mp4")}).success
         assert fake_http.by("GET", foreign)[0]["headers"] is None
 
-    def test_pending_cost_settles_on_refetch(self, uberllm_env, fake_http, tmp_path):
+    def test_pending_cost_settles_on_refetch(self, martllm_env, fake_http, tmp_path):
         happy_path(fake_http, polls=[job("running"), job("succeeded", pending=True), job("succeeded", cost=0.71)])
-        result = UberLLMVideo().execute({"prompt": "x", "output_path": str(tmp_path / "o.mp4")})
+        result = MartLLMVideo().execute({"prompt": "x", "output_path": str(tmp_path / "o.mp4")})
         assert result.success and result.cost_usd == pytest.approx(0.71)
         assert result.data["cost_status"] == "settled"
 
-    def test_unsettled_cost_reports_listed_price_as_pending(self, uberllm_env, fake_http, tmp_path):
+    def test_unsettled_cost_reports_listed_price_as_pending(self, martllm_env, fake_http, tmp_path):
         happy_path(fake_http, polls=[job("succeeded", pending=True)])
-        result = UberLLMVideo().execute({"prompt": "x", "output_path": str(tmp_path / "o.mp4")})
+        result = MartLLMVideo().execute({"prompt": "x", "output_path": str(tmp_path / "o.mp4")})
         assert result.success and result.cost_usd == pytest.approx(0.76)
         assert result.data["cost_status"] == "pending"
 
     @pytest.mark.parametrize("status", ["failed", "expired", "canceled"])
-    def test_terminal_states_fail_without_charge(self, uberllm_env, fake_http, status):
+    def test_terminal_states_fail_without_charge(self, martllm_env, fake_http, status):
         fake_http.add("POST", "/v1/video/generations", submitted())
         fake_http.add("GET", f"/v1/video/generations/{JOB_ID}", job(status))
-        result = UberLLMVideo().execute({"prompt": "x"})
+        result = MartLLMVideo().execute({"prompt": "x"})
         assert result.success is False and result.cost_usd == 0.0
         assert "Nothing was charged" in result.error
         assert result.data["resume_job"]["id"] == JOB_ID
 
-    def test_request_error_is_mapped_with_hint(self, uberllm_env, fake_http):
+    def test_request_error_is_mapped_with_hint(self, martllm_env, fake_http):
         fake_http.add("POST", "/v1/video/generations", FakeResponse(402, {"error": {
             "message": "Your balance is too low.", "type": "billing_error", "code": "insufficient_balance"}}))
-        result = UberLLMVideo().execute({"prompt": "x"})
+        result = MartLLMVideo().execute({"prompt": "x"})
         assert result.success is False
         assert "insufficient_balance" in result.error and "dashboard/credits" in result.error
         assert result.data["retryable"] is False
@@ -346,28 +346,28 @@ class TestLifecycle:
 # ------------------------------------------------------------------
 
 class TestResume:
-    def test_timeout_returns_resume_job(self, uberllm_env, fake_http, tmp_path):
+    def test_timeout_returns_resume_job(self, martllm_env, fake_http, tmp_path):
         fake_http.add("POST", "/v1/video/generations", submitted())
         fake_http.add("GET", f"/v1/video/generations/{JOB_ID}", job("running"))
         job_path = tmp_path / "job.json"
-        result = UberLLMVideo().execute({"prompt": "x", "poll_timeout": 0.01, "poll_interval": 0.005,
+        result = MartLLMVideo().execute({"prompt": "x", "poll_timeout": 0.01, "poll_interval": 0.005,
                                          "job_path": str(job_path)})
         assert result.success is False and result.data["retryable"] is True
         assert result.data["resume_job"]["id"] == JOB_ID
         assert json.loads(job_path.read_text())["id"] == JOB_ID
         assert "do not resubmit" in result.error
 
-    def test_resume_polls_without_resubmitting(self, uberllm_env, fake_http, tmp_path):
+    def test_resume_polls_without_resubmitting(self, martllm_env, fake_http, tmp_path):
         fake_http.add("GET", f"/v1/video/generations/{JOB_ID}", job("succeeded"))
         fake_http.add("GET", VIDEO_URL, FakeResponse(200, content=b"mp4"))
-        resume = {"id": JOB_ID, "tool": "uberllm_video", "model": SEEDANCE_T2V, "operation": "text_to_video",
+        resume = {"id": JOB_ID, "tool": "martllm_video", "model": SEEDANCE_T2V, "operation": "text_to_video",
                   "request": {"model": SEEDANCE_T2V, "prompt": "x", "duration_seconds": 5}, "estimated_cost_usd": 0.76}
-        result = UberLLMVideo().execute({"prompt": "x", "resume_job": resume, "output_path": str(tmp_path / "o.mp4")})
+        result = MartLLMVideo().execute({"prompt": "x", "resume_job": resume, "output_path": str(tmp_path / "o.mp4")})
         assert result.success, result.error
         assert fake_http.by("POST", "/v1/video/generations") == []
 
-    def test_foreign_resume_job_is_rejected(self, uberllm_env, fake_http):
-        result = UberLLMVideo().execute({"prompt": "x", "resume_job": {"id": "abc", "tool": "pika_video"}})
+    def test_foreign_resume_job_is_rejected(self, martllm_env, fake_http):
+        result = MartLLMVideo().execute({"prompt": "x", "resume_job": {"id": "abc", "tool": "pika_video"}})
         assert result.success is False and "does not belong" in result.error
         assert fake_http.calls == []
 
@@ -377,29 +377,29 @@ class TestResume:
 # ------------------------------------------------------------------
 
 class TestUploadsAndDryRun:
-    def test_local_first_frame_is_uploaded_to_uberllm(self, uberllm_env, fake_http, tmp_path):
+    def test_local_first_frame_is_uploaded_to_martllm(self, martllm_env, fake_http, tmp_path):
         frame = tmp_path / "first.png"
         frame.write_bytes(b"\x89PNG\r\n\x1a\n")
         file_url = f"{BASE}/v1/files/file_3f9c/content"
         fake_http.add("POST", "/v1/files", {"id": "file_3f9c", "object": "file", "url": file_url})
         happy_path(fake_http, model=SEEDANCE_I2V)
-        result = UberLLMVideo().execute({"prompt": "x", "reference_image_path": str(frame),
+        result = MartLLMVideo().execute({"prompt": "x", "reference_image_path": str(frame),
                                          "output_path": str(tmp_path / "o.mp4")})
         assert result.success, result.error
         assert fake_http.by("POST", "/v1/files")[0]["files"]["file"][0] == "first.png"
         assert fake_http.by("POST", "/v1/video/generations")[0]["json"]["image_url"] == file_url
 
-    def test_missing_local_file_fails_before_submit(self, uberllm_env, fake_http):
-        result = UberLLMVideo().execute({"prompt": "x", "reference_image_path": "/nonexistent/frame.png"})
+    def test_missing_local_file_fails_before_submit(self, martllm_env, fake_http):
+        result = MartLLMVideo().execute({"prompt": "x", "reference_image_path": "/nonexistent/frame.png"})
         assert result.success is False and "not found" in result.error
         assert fake_http.calls == []
 
-    def test_dry_run_quotes_without_submitting_or_storing(self, uberllm_env, fake_http, tmp_path):
+    def test_dry_run_quotes_without_submitting_or_storing(self, martllm_env, fake_http, tmp_path):
         frame = tmp_path / "first.png"
         frame.write_bytes(b"\x89PNG")
         fake_http.add("POST", "/v1/video/generations", {"object": "quote", "valid": True, "cost_usd": 0.352,
                                                          "max_cost_usd": 0.704, "unit": "second", "units": 5})
-        result = UberLLMVideo().execute({"prompt": "x", "reference_image_path": str(frame), "dry_run": True})
+        result = MartLLMVideo().execute({"prompt": "x", "reference_image_path": str(frame), "dry_run": True})
         assert result.success, result.error
         assert result.cost_usd == 0.0 and result.data["cost_status"] == "quoted"
         assert result.data["quoted_cost_usd"] == pytest.approx(0.352)
@@ -415,7 +415,7 @@ class TestUploadsAndDryRun:
 
 class TestSelectorRouting:
     @pytest.fixture()
-    def selector(self, uberllm_env):
+    def selector(self, martllm_env):
         from tools.tool_registry import registry
         from tools.video.video_selector import VideoSelector
 
@@ -432,20 +432,20 @@ class TestSelectorRouting:
         result = selector.execute(inputs)
         assert result.success, result.error
         names = [r.get("tool") or r.get("tool_name") or r.get("name") for r in result.data["rankings"]]
-        assert "uberllm_video" in names
+        assert "martllm_video" in names
 
     def test_explicit_route_by_tool_family_and_exact_model(self, selector):
         from tools.provider_routing import filter_explicit_route
 
         providers = selector._providers()
-        by_tool = filter_explicit_route({"preferred_tool": "uberllm_video", "operation": "image_to_video"}, providers)
-        assert [t.name for t in by_tool] == ["uberllm_video"]
-        by_family = filter_explicit_route({"model": "wan-2.7", "hosting_provider": "uberllm",
+        by_tool = filter_explicit_route({"preferred_tool": "martllm_video", "operation": "image_to_video"}, providers)
+        assert [t.name for t in by_tool] == ["martllm_video"]
+        by_family = filter_explicit_route({"model": "wan-2.7", "hosting_provider": "martllm",
                                            "operation": "reference_to_video"}, providers)
-        assert [t.name for t in by_family] == ["uberllm_video"]
+        assert [t.name for t in by_family] == ["martllm_video"]
         by_id = filter_explicit_route({"model": VIDU_T2V, "operation": "text_to_video"}, providers)
-        assert [t.name for t in by_id] == ["uberllm_video"]
-        assert filter_explicit_route({"preferred_tool": "uberllm_video", "operation": "video_edit"}, providers) == []
+        assert [t.name for t in by_id] == ["martllm_video"]
+        assert filter_explicit_route({"preferred_tool": "martllm_video", "operation": "video_edit"}, providers) == []
 
     def test_selector_passes_local_frame_through_without_fal(self, selector, fake_http, tmp_path, monkeypatch):
         frame = tmp_path / "first.png"
@@ -454,8 +454,8 @@ class TestSelectorRouting:
         fake_http.add("POST", "/v1/files", {"id": "file_1", "url": f"{BASE}/v1/files/file_1/content"})
         happy_path(fake_http, model=SEEDANCE_I2V)
         result = selector.execute({"prompt": "the still comes alive", "operation": "image_to_video",
-                                   "reference_image_path": str(frame), "preferred_tool": "uberllm_video",
+                                   "reference_image_path": str(frame), "preferred_tool": "martllm_video",
                                    "output_path": str(tmp_path / "o.mp4")})
         assert result.success, result.error
-        assert result.data["selected_tool"] == "uberllm_video"
+        assert result.data["selected_tool"] == "martllm_video"
         assert fake_http.by("POST", "/v1/video/generations")[0]["json"]["image_url"].endswith("/file_1/content")

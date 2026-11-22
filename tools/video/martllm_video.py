@@ -1,8 +1,8 @@
-"""Video generation through UberLLM (api.uberllm.dev).
+"""Video generation through MartLLM (api.martllm.com).
 
-One UberLLM key reaches Seedance 2.0, Wan 2.7, Kling 3, Veo 3.1 Fast, LTX 2.3,
+One MartLLM key reaches Seedance 2.0, Wan 2.7, Kling 3, Veo 3.1 Fast, LTX 2.3,
 Hailuo 02 and Vidu Q3 video models, and the same key and balance also serve
-UberLLM's image, music and speech models. This tool covers video.
+MartLLM's image, music and speech models. This tool covers video.
 
 The API is asynchronous: submit to ``/v1/video/generations`` with an
 ``Idempotency-Key``, poll ``/v1/video/generations/{id}``, then download the
@@ -12,7 +12,7 @@ returns as the actual ``cost_usd``.
 
 The models this tool offers, their request schemas (from
 ``GET /v1/models/{model_id}``) and their per-second rates (from the free
-``validate`` quote) are pinned in ``tools/provider_contracts/uberllm_video.json``.
+``validate`` quote) are pinned in ``tools/provider_contracts/martllm_video.json``.
 Every payload is checked against the pinned schema before a paid submission.
 """
 
@@ -47,27 +47,27 @@ from tools.base_tool import (
 from tools.provider_jobs import poll, save_job
 from tools.provider_pricing import PriceQuoteRequired
 
-DEFAULT_BASE_URL = "https://api.uberllm.dev"
-CONTRACT_PATH = Path(__file__).resolve().parent.parent / "provider_contracts" / "uberllm_video.json"
+DEFAULT_BASE_URL = "https://api.martllm.com"
+CONTRACT_PATH = Path(__file__).resolve().parent.parent / "provider_contracts" / "martllm_video.json"
 DEFAULT_FAMILY = "seedance-2.0"
 OPERATIONS = ("text_to_video", "image_to_video", "reference_to_video")
 BILLING_SETTLE_DELAYS = (2.0, 5.0, 10.0)
 MAX_INLINE_BYTES = 7 * 1024 * 1024
 
 _CODE_HINTS = {
-    "insufficient_balance": "Add credit at https://uberllm.dev/dashboard/credits and submit again.",
-    "invalid_api_key": "Check UBERLLM_API_KEY; keys start with ull_ (https://uberllm.dev/signup).",
+    "insufficient_balance": "Add credit at https://martllm.com/dashboard/credits and submit again.",
+    "invalid_api_key": "Check MARTLLM_API_KEY; keys start with ull_ (https://martllm.com/signup).",
     "rate_limited": "Too many requests right now. Wait, then submit again.",
     "max_cost_too_low": "The job can cost more than max_cost_usd; raise it or pick a cheaper model or length.",
     "image_required": "This model needs a first frame or reference picture.",
-    "invalid_image_url": "The picture link did not lead to a picture UberLLM could use.",
+    "invalid_image_url": "The picture link did not lead to a picture MartLLM could use.",
     "no_available_provider": "No seller can take this model right now; try again later or pick another model.",
 }
 _RETRYABLE_CODES = {"rate_limited", "no_available_provider", "provider_timeout", "provider_unavailable"}
 
 
-class UberLLMAPIError(RuntimeError):
-    """A request- or job-level error returned by the UberLLM API."""
+class MartLLMAPIError(RuntimeError):
+    """A request- or job-level error returned by the MartLLM API."""
 
     def __init__(self, message: str, *, code: str | None = None, status: int | None = None,
                  retry_after: str | None = None, retryable: bool | None = None):
@@ -87,27 +87,27 @@ FAMILIES: dict[str, dict[str, str]] = _CONTRACT["families"]
 MODEL_SPECS: dict[str, dict[str, Any]] = _CONTRACT["models"]
 
 
-class UberLLMVideo(BaseTool):
-    name = "uberllm_video"
+class MartLLMVideo(BaseTool):
+    name = "martllm_video"
     version = "0.1.0"
     tier = ToolTier.GENERATE
     capability = "video_generation"
-    provider = "uberllm"
+    provider = "martllm"
     stability = ToolStability.BETA
     execution_mode = ExecutionMode.SYNC
     determinism = Determinism.STOCHASTIC
     runtime = ToolRuntime.API
     resume_support = ResumeSupport.FROM_CHECKPOINT
 
-    dependencies = ["env:UBERLLM_API_KEY"]
+    dependencies = ["env:MARTLLM_API_KEY"]
     install_instructions = (
-        "Set UBERLLM_API_KEY to an UberLLM key (starts with ull_).\n"
-        "  1. Sign up at https://uberllm.dev/signup and create a key.\n"
+        "Set MARTLLM_API_KEY to a MartLLM key (starts with ull_).\n"
+        "  1. Sign up at https://martllm.com/signup and create a key.\n"
         "  2. Add credit under Dashboard -> Credits; usage is prepaid, pay as you go from $5.\n"
-        "  The same key also works for UberLLM's image, music, speech and chat models.\n"
-        "  Optional: UBERLLM_BASE_URL overrides https://api.uberllm.dev."
+        "  The same key also works for MartLLM's image, music, speech and chat models.\n"
+        "  Optional: MARTLLM_BASE_URL overrides https://api.martllm.com."
     )
-    agent_skills = ["uberllm-video", "ai-video-gen"]
+    agent_skills = ["martllm-video", "ai-video-gen"]
 
     capabilities = list(OPERATIONS)
     supports = {
@@ -121,7 +121,7 @@ class UberLLMVideo(BaseTool):
         "multi_model_gateway": True,
         "short_clips": True,
     }
-    # Routing hint for provider_routing.filter_explicit_route: model -> operation -> UberLLM model id.
+    # Routing hint for provider_routing.filter_explicit_route: model -> operation -> MartLLM model id.
     # Families first (the default family serves all three operations), then each exact id.
     models: dict[str, dict[str, str]] = {
         DEFAULT_FAMILY: dict(FAMILIES[DEFAULT_FAMILY]),
@@ -130,7 +130,7 @@ class UberLLMVideo(BaseTool):
     }
     best_for = [
         "one key for Seedance 2.0, Wan 2.7, Kling 3, Veo 3.1 Fast, LTX 2.3, Hailuo 02 and Vidu Q3",
-        "the same key and prepaid balance as UberLLM image, music and speech models",
+        "the same key and prepaid balance as MartLLM image, music and speech models",
         "cheap drafts (Vidu Q3 Turbo, Hailuo 02) before rerunning the approved take on a premium model",
         "a free exact price check (dry_run) before any paid job",
     ]
@@ -152,8 +152,8 @@ class UberLLMVideo(BaseTool):
         "provider_params", "max_cost_usd", "resume_job",
     ]
     side_effects = [
-        "submits a paid UberLLM video job",
-        "uploads local frame and reference pictures to UberLLM file storage (kept 24 hours)",
+        "submits a paid MartLLM video job",
+        "uploads local frame and reference pictures to MartLLM file storage (kept 24 hours)",
         "writes an MP4 and an optional job checkpoint",
     ]
     user_visible_verification = [
@@ -180,7 +180,7 @@ class UberLLMVideo(BaseTool):
                 "default": DEFAULT_FAMILY,
                 "description": (
                     "A model family (the operation picks its text, image or reference route) "
-                    "or an exact UberLLM model id. See get_info()['model_catalog']."
+                    "or an exact MartLLM model id. See get_info()['model_catalog']."
                 ),
             },
             "duration": {
@@ -196,7 +196,7 @@ class UberLLMVideo(BaseTool):
             # First frame (image_to_video). The selector-facing names are used on purpose:
             # advertising image_url would make video_selector upload local frames to fal first.
             "reference_image_url": {"type": "string", "description": "First-frame picture, https:// link."},
-            "reference_image_path": {"type": "string", "description": "Local first-frame picture; uploaded to UberLLM."},
+            "reference_image_path": {"type": "string", "description": "Local first-frame picture; uploaded to MartLLM."},
             # References (reference_to_video).
             "reference_image_urls": {"type": "array", "items": {"type": "string"}, "maxItems": 8},
             "reference_image_paths": {"type": "array", "items": {"type": "string"}, "maxItems": 8},
@@ -213,7 +213,7 @@ class UberLLMVideo(BaseTool):
                 "type": "boolean",
                 "default": False,
                 "description": (
-                    "Check the request and return UberLLM's exact quote without generating or charging. "
+                    "Check the request and return MartLLM's exact quote without generating or charging. "
                     "Local pictures are sent inline for the check and not stored."
                 ),
             },
@@ -248,7 +248,7 @@ class UberLLMVideo(BaseTool):
 
     @staticmethod
     def base_url() -> str:
-        return os.environ.get("UBERLLM_BASE_URL", DEFAULT_BASE_URL).rstrip("/")
+        return os.environ.get("MARTLLM_BASE_URL", DEFAULT_BASE_URL).rstrip("/")
 
     def get_info(self) -> dict[str, Any]:
         info = super().get_info()
@@ -272,8 +272,8 @@ class UberLLMVideo(BaseTool):
             "prepaid": True,
             "free_tier": False,
             "charged_on": "finished jobs only; failed, canceled and expired jobs cost nothing",
-            "prices": "https://uberllm.dev/models",
-            "dashboard": "https://uberllm.dev/dashboard",
+            "prices": "https://martllm.com/models",
+            "dashboard": "https://martllm.com/dashboard",
             "verified_on": _CONTRACT["_about"]["verified_on"],
         }
         return info
@@ -296,7 +296,7 @@ class UberLLMVideo(BaseTool):
         resolution = payload.get("resolution", "default")
         if resolution not in rates:
             raise PriceQuoteRequired(
-                f"No pinned {model_id} rate for {resolution}; set dry_run=true for UberLLM's exact quote"
+                f"No pinned {model_id} rate for {resolution}; set dry_run=true for MartLLM's exact quote"
             )
         return round(rates[resolution] * float(payload["duration_seconds"]), 6)
 
@@ -314,9 +314,9 @@ class UberLLMVideo(BaseTool):
 
     def execute(self, inputs: dict[str, Any]) -> ToolResult:
         started = time.time()
-        api_key = os.environ.get("UBERLLM_API_KEY", "").strip()
+        api_key = os.environ.get("MARTLLM_API_KEY", "").strip()
         if not api_key:
-            return ToolResult(success=False, error="UBERLLM_API_KEY not set. " + self.install_instructions)
+            return ToolResult(success=False, error="MARTLLM_API_KEY not set. " + self.install_instructions)
         headers = {"Authorization": f"Bearer {api_key}"}
         job = dict(inputs.get("resume_job") or {})
 
@@ -363,7 +363,7 @@ class UberLLMVideo(BaseTool):
                     json=payload,
                 )
                 if not submitted.get("id"):
-                    raise UberLLMAPIError("Submission returned no job id")
+                    raise MartLLMAPIError("Submission returned no job id")
                 job = {
                     "id": submitted["id"],
                     "tool": self.name,
@@ -378,7 +378,7 @@ class UberLLMVideo(BaseTool):
                 save_job(inputs.get("job_path"), job)
 
             if job.get("tool") != self.name or not job.get("id"):
-                raise ValueError("resume_job does not belong to uberllm_video")
+                raise ValueError("resume_job does not belong to martllm_video")
 
             job_url = f"{self.base_url()}/v1/video/generations/{quote(str(job['id']), safe='')}"
 
@@ -398,7 +398,7 @@ class UberLLMVideo(BaseTool):
             except TimeoutError as exc:
                 return ToolResult(
                     success=False,
-                    error=f"UberLLM job {job['id']} is still running after poll_timeout. {exc}",
+                    error=f"MartLLM job {job['id']} is still running after poll_timeout. {exc}",
                     data={"resume_job": job, "job_id": job["id"], "retryable": True, "provider": self.provider},
                     cost_usd=0.0,
                     duration_seconds=round(time.time() - started, 2),
@@ -410,7 +410,7 @@ class UberLLMVideo(BaseTool):
                 code = error.get("code") or final.get("status") or "provider_error"
                 retryable = error.get("retryable")
                 return self._failure(
-                    f"UberLLM job {job['id']} ended {final.get('status', 'failed')} ({code}): "
+                    f"MartLLM job {job['id']} ended {final.get('status', 'failed')} ({code}): "
                     f"{error.get('message') or exc}. Nothing was charged. " + _CODE_HINTS.get(code, ""),
                     job=job,
                     code=code,
@@ -422,7 +422,7 @@ class UberLLMVideo(BaseTool):
             video_url = outputs[0].get("url") if outputs else None
             if not video_url:
                 raise ValueError(f"Finished job {job['id']} returned no video URL")
-            output_path = Path(inputs.get("output_path") or f"uberllm_{job['id']}.mp4")
+            output_path = Path(inputs.get("output_path") or f"martllm_{job['id']}.mp4")
             artifact = self._download(video_url, output_path, headers)
 
             usage, cost_usd, cost_status = self._settle_cost(fetch, result, job.get("estimated_cost_usd"))
@@ -453,9 +453,9 @@ class UberLLMVideo(BaseTool):
                 duration_seconds=round(time.time() - started, 2),
                 model=result.get("model") or job.get("model"),
             )
-        except UberLLMAPIError as exc:
+        except MartLLMAPIError as exc:
             hint = _CODE_HINTS.get(exc.code or "", "")
-            message = f"UberLLM API error ({exc.code or exc.status}): {exc}. {hint}".strip()
+            message = f"MartLLM API error ({exc.code or exc.status}): {exc}. {hint}".strip()
             if exc.retry_after:
                 message += f" Retry-After: {exc.retry_after}."
             return self._failure(
@@ -463,7 +463,7 @@ class UberLLMVideo(BaseTool):
                 retryable=exc.retryable if exc.retryable is not None else exc.code in _RETRYABLE_CODES,
             )
         except Exception as exc:  # validation, upload, download and transport errors
-            return self._failure(f"UberLLM video generation failed: {exc}", job=job, started=started)
+            return self._failure(f"MartLLM video generation failed: {exc}", job=job, started=started)
 
     # ------------------------------------------------------------------
     # Request building
@@ -537,13 +537,13 @@ class UberLLMVideo(BaseTool):
             model_id = FAMILIES[model].get(operation)
             if not model_id:
                 offered = sorted(f for f, routes in FAMILIES.items() if operation in routes)
-                raise ValueError(f"{model} has no {operation} model on UberLLM; families that do: {', '.join(offered)}")
+                raise ValueError(f"{model} has no {operation} model on MartLLM; families that do: {', '.join(offered)}")
             return model_id
         if model in MODEL_SPECS:
             if MODEL_SPECS[model]["operation"] != operation:
                 raise ValueError(f"{model} is a {MODEL_SPECS[model]['operation']} model, not {operation}")
             return model
-        raise ValueError(f"Unknown UberLLM video model {model!r}; see get_info()['model_catalog']")
+        raise ValueError(f"Unknown MartLLM video model {model!r}; see get_info()['model_catalog']")
 
     @staticmethod
     def _who_offers(key: str, operation: str) -> str:
@@ -611,17 +611,17 @@ class UberLLMVideo(BaseTool):
             retry_after = response.headers.get("Retry-After") if response.headers else None
             error = body.get("error") if isinstance(body, dict) else None
             if isinstance(error, dict):
-                raise UberLLMAPIError(
+                raise MartLLMAPIError(
                     str(error.get("message") or response.reason or "request failed"),
                     code=error.get("code"), status=response.status_code, retry_after=retry_after,
                     retryable=error.get("retryable"),
                 )
-            raise UberLLMAPIError(
+            raise MartLLMAPIError(
                 str(response.text or response.reason or "request failed"),
                 status=response.status_code, retry_after=retry_after,
             )
         if not isinstance(body, dict):
-            raise UberLLMAPIError("Unexpected non-JSON response from UberLLM", status=response.status_code)
+            raise MartLLMAPIError("Unexpected non-JSON response from MartLLM", status=response.status_code)
         return body
 
     def _upload(self, path: Path, headers: dict[str, str]) -> str:
@@ -632,20 +632,20 @@ class UberLLMVideo(BaseTool):
                 files={"file": (path.name, handle, content_type)},
             )
         if not body.get("url"):
-            raise UberLLMAPIError(f"Upload of {path.name} returned no url")
+            raise MartLLMAPIError(f"Upload of {path.name} returned no url")
         return str(body["url"])
 
     def _download(self, url: str, path: Path, headers: dict[str, str]) -> str:
         parsed = urlparse(url)
         if parsed.scheme != "https":
             raise ValueError("Video output must be an https:// URL")
-        # The key goes only to the UberLLM host, never to a third-party link.
+        # The key goes only to the MartLLM host, never to a third-party link.
         same_host = parsed.netloc == urlparse(self.base_url()).netloc
         response = requests.get(url, headers=headers if same_host else None, timeout=300)
         if response.status_code >= 400:
-            raise UberLLMAPIError(f"Download failed with HTTP {response.status_code}", status=response.status_code)
+            raise MartLLMAPIError(f"Download failed with HTTP {response.status_code}", status=response.status_code)
         if not response.content:
-            raise ValueError("UberLLM returned an empty video")
+            raise ValueError("MartLLM returned an empty video")
         path.parent.mkdir(parents=True, exist_ok=True)
         temp = path.with_name(path.name + ".part")
         temp.write_bytes(response.content)
@@ -662,7 +662,7 @@ class UberLLMVideo(BaseTool):
             time.sleep(delay)
             try:
                 usage = fetch().get("usage") or usage
-            except (UberLLMAPIError, RequestException):
+            except (MartLLMAPIError, RequestException):
                 # The video is already downloaded; only reconciliation is retried, never the paid job.
                 continue
         if usage and usage.get("cost_usd") is not None:
