@@ -1,0 +1,7 @@
+[
+ {"name": "01_guest_1", "session": 1, "title": "Example Show - Guest 1",
+  "keep": [[236.95, 3633.75]], "max_gap": 2.5},
+ {"name": "02_guest_2", "session": 2, "title": "Example Show - Guest 2",
+  "keep": [[234.75, 3082.3], [3162.55, 3779.78]], "max_gap": 2.5,
+  "demo": [[3162.0, 3345.0]]}
+]
