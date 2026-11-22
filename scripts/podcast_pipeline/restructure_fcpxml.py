@@ -55,7 +55,7 @@ def reframe(root, gap, kids, vertical, pname):
     pre-rendered side-by-side clip."""
     W, H = (1080, 1920) if vertical else (1920, 1080)
     f = min(W / SW, H / SH)                    # the scale FCP's Fit conform already applies
-    reel = next(c["name"] for c in CLIPS if pname.startswith(c["name"][:2] + " "))
+    reel = next(c["name"] for c in CLIPS if pname.startswith(c["name"].split("_")[0] + " "))  # "01_slug" -> "01", "t12_slug" -> "t12"
     res = root.find("resources")
     for k in kids:
         if k.tag != "asset-clip" or k.find("adjust-crop") is None: continue

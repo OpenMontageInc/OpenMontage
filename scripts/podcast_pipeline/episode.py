@@ -298,7 +298,7 @@ def render(ep, test=None, workers=4):
 
 # ---------------- Final Cut Pro ----------------
 LABEL = dict(X.LABEL, two="Two-shot")
-def proj_name(ep): return f'{ep["name"][:2]} {ep["title"]} (16x9 episode)'.replace('"', "")
+def proj_name(ep): return f'{ep["name"].split("_")[0]} {ep["title"]} (16x9 episode)'.replace('"', "")
 
 def fcp_project(ep, ranges, shots):
     """Gap-version project (export_fcpxml layout) for restructure_fcpxml.py."""
