@@ -36,20 +36,19 @@ When `BFL_API_KEY` is not set in the current session:
 
 2. **If found, export it**:
    ```bash
-   export BFL_API_KEY=$(grep BFL_API_KEY .env | cut -d '=' -f2)
+   export BFL_API_KEY=$(grep '^BFL_API_KEY=' .env | cut -d '=' -f2)
    ```
 
-3. **If not found, ask the user** for their key:
-   > "I need a BFL API key to generate images. Please:
-   > 1. Go to https://dashboard.bfl.ai/get-started
-   > 2. Click 'Create Key' and copy it
-   > 3. Paste it here"
+3. **If not found, direct the user to update `.env` directly**:
+   > "A BFL API key is required to generate images. Please:
+   > 1. Get a key from https://dashboard.bfl.ai/get-started
+   > 2. Add `BFL_API_KEY=your_key_here` to your `.env` file
+   > (Do not send your API key in chat.)"
 
-4. **Save and export**:
+4. **Ensure `.env` is ignored and export the key**:
    ```bash
-   echo 'BFL_API_KEY=bfl_provided_key' >> .env
    echo '.env' >> .gitignore
-   export BFL_API_KEY=bfl_provided_key
+   export BFL_API_KEY=$(grep '^BFL_API_KEY=' .env | cut -d '=' -f2)
    ```
 
 Now `$BFL_API_KEY` is available for direct curl/API calls in the session.
