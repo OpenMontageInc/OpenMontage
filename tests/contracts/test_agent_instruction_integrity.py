@@ -29,3 +29,19 @@ def test_explainer_directors_do_not_reference_fictitious_submit_functions() -> N
     for stage in ("idea", "script", "scene"):
         text = _read(f"skills/pipelines/explainer/{stage}-director.md")
         assert "handle_explainer_" not in text
+
+
+def test_bfl_api_skill_no_secret_echoing_or_chat_credentials() -> None:
+    bfl_skill_files = [
+        ".agents/skills/bfl-api/SKILL.md",
+        ".claude/skills/bfl-api/SKILL.md",
+        ".agents/skills/bfl-api/references/api-key-setup.md",
+        ".claude/skills/bfl-api/references/api-key-setup.md",
+    ]
+
+    for relative_path in bfl_skill_files:
+        text = _read(relative_path)
+        assert "echo $BFL_API_KEY" not in text, f"{relative_path} echoes $BFL_API_KEY"
+        assert "Paste it here" not in text, f"{relative_path} requests raw API key in chat"
+        assert "ask the user" not in text.lower() or "paste" not in text.lower(), f"{relative_path} asks for key paste in chat"
+
