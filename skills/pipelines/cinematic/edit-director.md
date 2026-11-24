@@ -42,6 +42,10 @@ Recommended metadata keys:
 - `title_card_windows`
 - `reframe_notes`
 
+### 4b. Check Raccords at Every Cut (Narrative Fiction)
+
+Watch each cut point, not just each clip. Flag any cut where a character swaps side, both speakers look toward the same edge, the screen direction reverses, light or weather jumps, or a state (wet, injured, object broken) resets — see `skills/creative/shot-continuity.md` §4. Fix in the edit when possible (trim to a cleaner frame, reorder, recrop a tight framing, grade a light mismatch); otherwise send the take back to assets with the defect named. Lay one continuous ambience bed per location under its takes so the sound does not jump at cuts (`skills/creative/fiction-shot-direction.md` §5).
+
 ### 5. Quality Gate
 
 - the emotional arc is intact,

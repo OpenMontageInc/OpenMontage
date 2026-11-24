@@ -109,6 +109,8 @@ Key capability families to look for in the output:
 | â†³ LTX Prompting | `creative/prompting/ltx-prompting.md` | LTX-2 6-element structure, audio prompting | `ltx2` |
 | â†³ HunyuanVideo Prompting | `creative/prompting/hunyuan-prompting.md` | HunyuanVideo formula, I2V best practices | â€" |
 | Commercial Product Video | `creative/commercial-product-video.md` | Physical-product ads: SKU references, shot roles, generation controls, continuity, and final-cut fidelity | — |
+| Shot Continuity | `creative/shot-continuity.md` | Raccords for generated narrative takes: continuity ledger (wet/injured/prop states), location maps and 180° axis, eyelines, previous-take reference, take review | `seedance-2-5` |
+| Fiction Shot Direction | `creative/fiction-shot-direction.md` | Camera from intent, acting written for video models, one-face dialogue lip-sync, ambience/music rules, micro-drama dramaturgy | `seedance-2-5` |
 | Storytelling | `creative/storytelling.md` | Narrative structure, hooks, pacing, Mayer's principles | â€" |
 | Sound Design | `creative/sound-design.md` | Audio ducking, LUFS targets, SFX timing, AI TTS mixing | `elevenlabs` |
 | Typography | `creative/typography.md` | Font selection, text sizing, safe zones, caption styling | â€" |
