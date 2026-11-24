@@ -131,6 +131,17 @@ Recommended metadata keys:
 >
 > Log the (pre, critique, post) triplet in the asset metadata for traceability. This mirrors the CHAI workflow and creates a record the reviewer can audit.
 
+### 4b. Raccords Between Takes (Narrative Fiction)
+
+For story-driven takes with recurring characters, follow `skills/creative/shot-continuity.md` §5–§8 on every take:
+
+1. **Before the take**: rebuild the prompt's `LOCATION MAP`, `CONTINUITY LOCKS` and `FINAL FRAME` blocks from `scene_plan.metadata.continuity_ledger` and `location_maps`; check states, sides and eyelines against the previous take; attach the state variant of each character/prop (soaked, bloodied, broken), never the clean sheet after the change. Then run `scripts/prompt_preflight.py` on all clips in story order: no ERROR left, every WARN fixed or justified, every handoff row read, before the first paid take (and again after any prompt edit, retakes included).
+2. **Same location, same view as the previous take**: extract the retained previous take's real last frame, look at it, write the opening from it, and attach it as the last reference ("the last image of the previous take of this same scene: positions, light and set, not the framing"). Not for chained, reverse, insert or extreme close-up shots.
+3. **After the take**: sample each shot boundary plus the last frame, review them one by one, log defects in `asset_manifest.metadata.take_reviews` (state reset, unmotivated position change, copied framing, axis jump, light change, identity drift, proportions, background against the plate), and update the ledger from what was actually delivered before writing the next prompt.
+4. **Before reporting the takes or asking for retakes**: run `scripts/raccord_sheet.py` on every retained take in story order. Read each sheet on its own and fill in every row of `raccord_checklist.md`, which has one row per cut, between takes and inside each take. Also check each location plate's scale once (doors against furniture against people) before the first take there. A wrong plate is fixed before any retake that uses it.
+
+A missing reference stops that take until the asset exists; do not compensate with text.
+
 ### 5. Quality Gate
 
 - source and support assets are clearly distinguished,
@@ -138,6 +149,8 @@ Recommended metadata keys:
 - audio plan matches the beat map,
 - every referenced file exists.
 - if motion is required, the asset set contains actual video clips for the motion-led beats.
+- for narrative fiction: every take has a take review, and no take shows a state reset, swapped sides or an uncaused state (wet with no water shown, wound appearing) relative to its neighbours.
+- for narrative fiction: `raccord_checklist.md` from `scripts/raccord_sheet.py` covers every cut and has no empty cell, and every location plate passed the scale check.
 
 ### Mid-Production Fact Verification
 

@@ -63,13 +63,24 @@ Recommended metadata keys:
 
 > **Overlays callout.** Overlays (titles, subtitles, HUD, watermarks, framing graphics, lower-thirds, name plates, end-tag cards) are NOT part of the scene's foreground/midground/background depth axis. List them separately in scene metadata (`overlays: [...]`) with content and placement. Never describe an overlay as "in the foreground" — that confuses both downstream tools and any video-understanding model that re-analyzes the output.
 
+### 5b. Continuity Ledger and Location Maps (Narrative Fiction)
+
+When the piece tells a story with recurring characters across several generated takes, read `skills/creative/shot-continuity.md` and `skills/creative/fiction-shot-direction.md` before planning shots. Then store in `scene_plan.metadata`:
+
+- `continuity_ledger` — the world state at the start, then the end state of every shot: per character side of frame, facing, gaze, outfit variant, physical state (dry/damp/soaked, dirt, blood, injuries), props and which hand; per prop its state; per location weather and light. Every state change has a cause shown on screen; states only advance (wetness, dirt, damage never reset without a shown bridge).
+- `location_maps` — one GEO map per location (landmarks, frame-left/right from the camera side, 180° axis side, light source with direction and color), pasted verbatim into every take shot there.
+- `missing_assets` — every reference the plan needs and the canon lacks (reverse plate, soaked/bloodied character variant, broken prop variant). They are created before the take, never worked around in text.
+
+Audit the ledger shot by shot before the gate: each state word used in any shot traces back to a shown cause, and every shot between cause and use carries it.
+
 ### 6. Quality Gate
 
 - every beat has a scene treatment,
 - hero frames are identifiable AND fully specified across all 5 aspects,
 - support inserts are justified,
 - overlays are recorded under `overlays:`, never inside the depth/framing description,
-- the visual language stays consistent across the piece.
+- the visual language stays consistent across the piece,
+- for narrative fiction: the continuity ledger has no uncaused or reset state, every cut passes the checks of `shot-continuity.md` §4 (30° rule, eyelines, screen direction, light), and `missing_assets` is empty or scheduled before the takes.
 
 ## Common Pitfalls
 
