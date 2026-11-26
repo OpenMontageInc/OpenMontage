@@ -8,8 +8,9 @@ the standard library.
 from __future__ import annotations
 
 import json
-from html import escape
+import math
 import time
+from html import escape
 from pathlib import Path
 from typing import Any
 
@@ -26,7 +27,7 @@ from tools.base_tool import (
 
 class SubtitleGen(BaseTool):
     name = "subtitle_gen"
-    version = "0.1.0"
+    version = "0.1.1"
     tier = ToolTier.CORE
     capability = "subtitle"
     provider = "openmontage"
@@ -46,7 +47,7 @@ class SubtitleGen(BaseTool):
         "properties": {
             "segments": {
                 "type": "array",
-                "description": "Transcript segments from transcriber (with words and timestamps)",
+                "description": "Transcript segments with word or sentence timestamps in seconds; accepts start/end and Doubao startTime/endTime.",
             },
             "format": {
                 "type": "string",
@@ -81,7 +82,10 @@ class SubtitleGen(BaseTool):
     ]
 
     def execute(self, inputs: dict[str, Any]) -> ToolResult:
-        segments = inputs["segments"]
+        try:
+            segments = self._normalize_timestamps(inputs["segments"])
+        except ValueError as exc:
+            return ToolResult(success=False, error=str(exc))
         fmt = inputs.get("format", "srt")
         max_words = inputs.get("max_words_per_cue", 8)
         max_chars = inputs.get("max_chars_per_line", 42)
@@ -130,6 +134,68 @@ class SubtitleGen(BaseTool):
         )
 
     @staticmethod
+    def _normalize_timestamps(segments: list[dict]) -> list[dict]:
+        """Accept canonical and Doubao timestamps, both in seconds, without mutation."""
+        def normalize(item: dict, location: str) -> dict:
+            result = dict(item)
+            # Prefer a complete canonical pair; never guess missing timing.
+            if "start" in item and "end" in item:
+                start, end = item["start"], item["end"]
+            elif "startTime" in item and "endTime" in item:
+                start, end = item["startTime"], item["endTime"]
+            else:
+                raise ValueError(f"Missing timestamps at {location}: expected start/end or startTime/endTime")
+            if any(isinstance(t, bool) or not isinstance(t, (int, float))
+                   or not math.isfinite(t) for t in (start, end)):
+                raise ValueError(f"Invalid timestamps at {location}: expected finite numbers in seconds")
+            if start < 0 or end < start:
+                raise ValueError(f"Invalid timestamp range at {location}: expected 0 <= start <= end")
+            result.update(start=start, end=end)
+            return result
+
+        normalized = []
+        for index, segment in enumerate(segments):
+            words = segment.get("words", [])
+            if words:
+                result = dict(segment)
+                result["words"] = [normalize(word, f"segments[{index}].words[{wi}]")
+                                   for wi, word in enumerate(words)]
+            elif "text" in segment:
+                result = normalize(segment, f"segments[{index}]")
+            else:
+                result = dict(segment)
+            normalized.append(result)
+        return normalized
+
+    @staticmethod
+    def _join_tokens(tokens: list[str], rendered: list[str] | None = None) -> str:
+        """Join Chinese tokens without spaces while retaining Latin word spacing.
+
+        Optional rendered tokens allow karaoke markup without changing spacing.
+        """
+        def chinese_boundary(char: str) -> bool:
+            return ("\u3400" <= char <= "\u9fff" or "\U00020000" <= char <= "\U000323af"
+                    or char in "，。！？；：、（）【】《》")
+
+        parts = []
+        previous = ""
+        for token, display in zip(tokens, rendered if rendered is not None else tokens):
+            token = token.strip()
+            if not token:
+                continue
+            # Standalone quotes attach inward. The outer spacing follows the adjacent text.
+            if previous and not (
+                chinese_boundary(previous[-1])
+                or chinese_boundary(token[0])
+                or previous in ("“", "‘")
+                or token in ("”", "’")
+            ):
+                parts.append(" ")
+            parts.append(display.strip())
+            previous = token
+        return "".join(parts)
+
+    @staticmethod
     def _apply_corrections(
         segments: list[dict], corrections: dict[str, str]
     ) -> list[dict]:
@@ -153,7 +219,7 @@ class SubtitleGen(BaseTool):
                     w["word"] = corr[stripped] + trailing
             # Also fix segment-level text
             if "text" in seg and words:
-                seg["text"] = " ".join(w["word"] for w in words)
+                seg["text"] = SubtitleGen._join_tokens([w["word"] for w in words])
             elif "text" in seg:
                 for wrong, right in corr.items():
                     import re as _re
@@ -193,7 +259,7 @@ class SubtitleGen(BaseTool):
 
         for w in all_words:
             word_text = w["word"].strip()
-            candidate = f"{buf_text} {word_text}".strip() if buf_text else word_text
+            candidate = self._join_tokens([b["word"] for b in buf] + [word_text])
 
             if buf and (len(buf) >= max_words or len(candidate) > max_chars):
                 cues.append({
@@ -210,7 +276,7 @@ class SubtitleGen(BaseTool):
                 buf_text = ""
 
             buf.append(w)
-            buf_text = f"{buf_text} {word_text}".strip() if buf_text else word_text
+            buf_text = self._join_tokens([b["word"] for b in buf])
 
         # Flush remaining
         if buf:
@@ -262,7 +328,7 @@ class SubtitleGen(BaseTool):
                             parts.append(f"<b>{w['word']}</b>")
                         else:
                             parts.append(w["word"])
-                    lines.append(" ".join(parts))
+                    lines.append(self._join_tokens([w["word"] for w in words], parts))
                     lines.append("")
         else:
             for cue in cues:
@@ -300,7 +366,7 @@ class SubtitleGen(BaseTool):
                             parts.append(f"<b>{escape(w['word'], quote=False)}</b>")
                         else:
                             parts.append(escape(w["word"], quote=False))
-                    lines.append(" ".join(parts))
+                    lines.append(self._join_tokens([w["word"] for w in words], parts))
                     lines.append("")
         else:
             for cue in cues:
