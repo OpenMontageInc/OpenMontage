@@ -88,6 +88,63 @@ def test_mixed_text_preserves_english_word_spaces():
     assert SubtitleGen._join_tokens(["中国", "open", "source", "模型", "R", "一。"]) == "中国open source模型R一。"
 
 
+@pytest.mark.parametrize(
+    "tokens, expected",
+    [
+        pytest.param(
+            ["He", "said", "“hello", "world”", "today."],
+            "He said “hello world” today.",
+            id="english",
+        ),
+        pytest.param(
+            ["He", "said", "“", "hello", "world", "”", "today."],
+            "He said “hello world” today.",
+            id="separate-quotes",
+        ),
+        pytest.param(
+            ["旁白：", "He", "said", "“hello", "world”", "today."],
+            "旁白：He said “hello world” today.",
+            id="english-in-mixed-caption",
+        ),
+        pytest.param(
+            ["他", "说", "“", "你", "好", "”", "。"],
+            "他说“你好”。",
+            id="chinese",
+        ),
+        pytest.param(
+            ["他说", "“", "open", "source", "”", "。"],
+            "他说“open source”。",
+            id="english-quote-in-chinese-caption",
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "fmt, highlight", [("srt", "none"), ("srt", "karaoke"), ("vtt", "karaoke")]
+)
+def test_curly_quote_spacing(tmp_path, tokens, expected, fmt, highlight):
+    words = [
+        {"word": token, "start": index, "end": index + 1}
+        for index, token in enumerate(tokens)
+    ]
+    output = tmp_path / f"quotes.{fmt}"
+    result = SubtitleGen().execute({
+        "segments": [{"words": words}],
+        "format": fmt,
+        "highlight_style": highlight,
+        "output_path": str(output),
+    })
+
+    assert result.success
+    lines = output.read_text(encoding="utf-8").splitlines()
+    if highlight == "karaoke":
+        caption_lines = [
+            line.replace("<b>", "").replace("</b>", "") for line in lines if "<b>" in line
+        ]
+        assert caption_lines == [expected] * len(tokens)
+    else:
+        assert lines[2] == expected
+
+
 def test_chinese_cue_length_uses_actual_text(tmp_path):
     output = tmp_path / "split.json"
     words = [{"word": ch, "startTime": i, "endTime": i + 1}

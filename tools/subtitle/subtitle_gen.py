@@ -174,7 +174,7 @@ class SubtitleGen(BaseTool):
         """
         def chinese_boundary(char: str) -> bool:
             return ("\u3400" <= char <= "\u9fff" or "\U00020000" <= char <= "\U000323af"
-                    or char in "，。！？；：、（）【】《》“”‘’")
+                    or char in "，。！？；：、（）【】《》")
 
         parts = []
         previous = ""
@@ -182,7 +182,13 @@ class SubtitleGen(BaseTool):
             token = token.strip()
             if not token:
                 continue
-            if previous and not (chinese_boundary(previous[-1]) or chinese_boundary(token[0])):
+            # Standalone quotes attach inward. The outer spacing follows the adjacent text.
+            if previous and not (
+                chinese_boundary(previous[-1])
+                or chinese_boundary(token[0])
+                or previous in ("“", "‘")
+                or token in ("”", "’")
+            ):
                 parts.append(" ")
             parts.append(display.strip())
             previous = token
