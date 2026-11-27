@@ -503,6 +503,7 @@ Each tool declares which Layer 3 skills it relies on. The agent reads Layer 1 to
 | **Higgsfield** | Cloud API | Multi-model orchestrator with Soul ID for character consistency |
 | **MiniMax / H3** | Cloud API | Cost-effective generation, including text, image, and reference-driven H3 workflows |
 | **HeyGen** | Cloud API | Multi-model gateway |
+| **Agnes AI** | Cloud API | Image + video generation (free during launch promo) |
 | **WAN 2.1 / 2.2** | Local GPU | Free local variants plus accelerated ComfyUI workflows |
 | **Hunyuan** | Local GPU | Free, high quality |
 | **CogVideo** | Local GPU | Free, 2B and 5B variants |
@@ -527,6 +528,7 @@ Each tool declares which Layer 3 skills it relies on. The agent reads Layer 1 to
 | **Atlas Cloud** | Cloud API | Unified access to multiple image-generation model families |
 | **Recraft** | Cloud API | Design-focused generation |
 | **Kling Official** | Cloud API | Official direct API for Kling image generation and reference workflows |
+| **Agnes AI** | Cloud API | Image + video generation (free during launch promo) |
 | **Local Diffusion** | Local GPU | Stable Diffusion, free |
 | **Pexels** | Stock | Free stock images |
 | **Pixabay** | Stock | Free stock images |
