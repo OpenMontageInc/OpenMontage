@@ -135,30 +135,40 @@ function detectRuntime(): "bun" | "deno" | "node" {
   return "node";
 }
 
-async function ensurePackage(name: string): Promise<any> {
+const BEAUTIFUL_MERMAID_PACKAGE = "beautiful-mermaid";
+const BEAUTIFUL_MERMAID_VERSION = "1.1.3";
+
+async function ensureBeautifulMermaid(): Promise<any> {
   const runtime = detectRuntime();
 
   try {
     if (runtime === "deno") {
-      return await import(`npm:${name}`);
+      return await import(`npm:${BEAUTIFUL_MERMAID_PACKAGE}@${BEAUTIFUL_MERMAID_VERSION}`);
     }
-    return await import(name);
+    return await import(BEAUTIFUL_MERMAID_PACKAGE);
   } catch {
-    console.error(`${name} not found. Installing...`);
+    const spec = `${BEAUTIFUL_MERMAID_PACKAGE}@${BEAUTIFUL_MERMAID_VERSION}`;
+    console.error(`${BEAUTIFUL_MERMAID_PACKAGE} not found. Installing pinned ${spec}...`);
 
-    const { execSync } = await import("node:child_process");
+    const { execFileSync } = await import("node:child_process");
 
     try {
       if (runtime === "bun") {
-        execSync(`bun add ${name}`, { stdio: "inherit" });
+        execFileSync("bun", ["add", "--exact", "--ignore-scripts", spec], {
+          stdio: "inherit",
+        });
       } else if (runtime === "deno") {
-        return await import(`npm:${name}`);
+        return await import(`npm:${spec}`);
       } else {
-        execSync(`npm install ${name}`, { stdio: "inherit" });
+        execFileSync(
+          "npm",
+          ["install", "--no-save", "--save-exact", "--ignore-scripts", "--package-lock=false", spec],
+          { stdio: "inherit" },
+        );
       }
-      return await import(name);
+      return await import(BEAUTIFUL_MERMAID_PACKAGE);
     } catch (installError) {
-      console.error(`Failed to install ${name}:`, installError);
+      console.error(`Failed to install ${spec}:`, installError);
       process.exit(1);
     }
   }
@@ -201,7 +211,7 @@ async function main(): Promise<void> {
 
   console.log(`Rendering diagram with theme: ${args.theme}`);
 
-  const beautifulMermaid = await ensurePackage("beautiful-mermaid");
+  const beautifulMermaid = await ensureBeautifulMermaid();
   const renderMermaid = beautifulMermaid.renderMermaid;
   const THEMES = beautifulMermaid.THEMES;
 
