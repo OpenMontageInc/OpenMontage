@@ -113,10 +113,16 @@ Assets are cached automatically on resolve. Subsequent resolves for the same pro
 | `ffprobe` | Probe duration, dimensions, codec on adopt | Yes           |
 | `heygen`  | Audio catalog, asset search                | For providers |
 
-Install the `heygen` CLI (single static binary, no runtime) and authenticate:
+Install the `heygen` CLI (single static binary, no runtime) and authenticate. Download the
+official bootstrap script separately so it is never executed straight from the network:
 
 ```bash
-curl -fsSL https://static.heygen.ai/cli/install.sh | bash   # installs latest to ~/.local/bin
+installer="$(mktemp)"
+curl --proto '=https' --tlsv1.2 --fail --location --silent --show-error \
+  https://static.heygen.ai/cli/install.sh --output "$installer"
+${PAGER:-less} "$installer"                                # review before executing
+bash "$installer"                                          # installs latest to ~/.local/bin
+rm -f "$installer"
 heygen update                                               # if already installed: needs >= v0.1.6
 export HEYGEN_API_KEY=<your-key>                            # or: heygen auth login --key <key>
 ```
